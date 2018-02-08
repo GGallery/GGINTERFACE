@@ -1,0 +1,36 @@
+.box .g-block {
+    padding: 0 5px;
+    margin-bottom: 5px;
+}
+
+.box .rt-image {
+    background-size: cover;
+    min-height: 180px;
+    overflow: hidden;
+}
+
+.interno {
+    border: 1px solid;
+}
+
+.title {
+    height: 50px;
+}
+
+
+.debugg {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 300px;
+    height: 100%;
+    border-top: dotted 2px;
+    overflow: scroll;
+
+}
+
+body {
+    left: 300px !important;
+    position: absolute !important;
+}
+
