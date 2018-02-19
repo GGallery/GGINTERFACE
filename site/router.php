@@ -27,14 +27,6 @@ class gginterfaceRouter extends JComponentRouterBase
             unset($query['type']);
         }
 
-        if (isset($query['alias'])) {
-            $segments[] = $query['alias'];
-            unset($query['alias']);
-        }
-
-        if (isset($query['unit'])) {
-            unset($query['unit']);
-        }
 
         return $segments;
     }
@@ -44,56 +36,10 @@ class gginterfaceRouter extends JComponentRouterBase
         $vars = array();
 
         switch ($segments[0]) {
-            case 'unita':
-                $vars['view'] = 'unita';
-
-
-                $alias = $segments[1];
-                $query = $db->getQuery(true)
-                    ->select('id')
-                    ->from('#__gg_unit')
-                    ->where('alias="' . $alias . '"');
-
-                $db->setQuery($query);
-                $vars['id'] = $db->loadResult();
-
-
-                break;
-
-            case 'contenuto':
-
-                $vars['view'] = 'contenuto';
-
-                if (strpos($segments[1], '-') === false) {
-                    $alias = $segments[1];
-                    $query = $db->getQuery(true)
-                        ->select('id')
-                        ->from('#__gg_contenuti')
-                        ->where('alias="' . $alias . '"');
-
-                    $db->setQuery($query);
-                    $vars['id'] = $db->loadResult();
-                }
-                else {
-                    list($id, $alias) = explode('-', $segments[1], 2);
-                    $vars['id'] = $id;
-                }
-
-                break;
-
-            case 'coupon':
-                $vars['view'] = 'coupon';
-                break;
-
-            case 'dash':
-
-                $vars['view'] = 'dash';
-                break;
 
             default:
                 $vars['view'] = 'gginterface';
                 break;
-
 
         }
         return $vars;

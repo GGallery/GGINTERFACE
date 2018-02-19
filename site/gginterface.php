@@ -20,6 +20,7 @@ require_once (JPATH_COMPONENT.'/controller.php');
 // Require specific controller if requested
 if($controller = JRequest::getCmd('controller')) 
 {
+
 	$path = JPATH_COMPONENT.'/controllers/'.$controller.'.php';
 	if ( file_exists( $path ) ) {
 		require_once( $path );
@@ -27,6 +28,8 @@ if($controller = JRequest::getCmd('controller'))
 		$controller = '';
 	}
 }
+
+
 
 // Create the controller
  $controller = JControllerLegacy::getInstance('gginterface');
