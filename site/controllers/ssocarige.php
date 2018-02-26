@@ -114,7 +114,7 @@ class gginterfaceControllerSsocarige extends JControllerLegacy
 
     public function crontest() {
 
-    //        http://www.carigelearning.test/home/index.php?option=com_gginterface&task=ssocarige.crontest
+    //        https://www.carigelearning.test/home/index.php?option=com_gginterface&task=ssocarige.crontest
         DEBUGG::log('TEST', 'CRON',1,1,0  );
 
 }

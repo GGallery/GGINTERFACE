@@ -34,12 +34,9 @@ if($controller = JRequest::getCmd('controller'))
 // Create the controller
  $controller = JControllerLegacy::getInstance('gginterface');
 
-//$classname	= 'gginterfaceController' . ucfirst($controller);
-//$controller = new $classname();
-
- 
 // Perform the Request task
-$controller->execute(JFactory::getApplication()->input->get('task')); //RS $controller->execute(JRequest::getCmd('task'));
+$controller->execute(JFactory::getApplication()->input->get('task'));
+
 
 
 $controller->redirect();
