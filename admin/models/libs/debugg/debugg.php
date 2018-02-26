@@ -9,19 +9,19 @@
 class DEBUGG
 {
 
-    public static function log($object, $label = "", $die = 0, $insert_in_gg_error_log = 0, $debug_with_eco=1){
+    public static function log($object, $label = "", $die = 0, $insert_in_ggif_log = 0, $debug_with_eco=1){
 
-        if($insert_in_gg_error_log==1){
+        if($insert_in_ggif_log==1){
 
             try {
                 $db = JFactory::getDbo();
                 $query = $db->getQuery(true);
                 $errormessage=$label.' : '.addslashes((string)$object);
-                $query='INSERT INTO #__gg_error_log (messaggio,timestamp) VALUES (\''.$errormessage.'\',NOW())';
+                $query='INSERT INTO #__ggif_log (`action`) VALUES (\''.$errormessage.'\')';
                 $db->setQuery($query);
                 $db->execute();
             }catch (exceptions $ex){
-                echo 'errore generico nel caricamento della tabella #__gg_error_log';
+                echo 'errore generico nel caricamento della tabella #__ggif_error_log';
             }
         }
 
