@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html>
+<body>
+<p>Click the button to encode a URI.</p>
+
+<button onclick="myFunction()">Try it</button>
+
+<p id="demo"></p>
+
+<script>
+    function myFunction() {
+        var uri = "option=com_gginterface&task=ssocarige.login&id_utente=186163644";
+        var res = encodeURI(uri);
+        document.getElementById("demo").innerHTML = res;
+    }
+</script>
+</body>
+</html>
