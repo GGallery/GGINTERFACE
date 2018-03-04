@@ -38,7 +38,7 @@ class gginterfaceControllerSsocarige extends JControllerLegacy
 
         $id_utente = JRequest::getVar('id_utente');
 
-        DEBUGG::log($id_utente, 'LOGINSI', 0, 1, 0);
+        DEBUGG::log($id_utente, 'SSO_IDUTENTE', 0, 1, 0);
 
         $app = JFactory::getApplication();
         $db = JFactory::getDBO();
@@ -77,7 +77,7 @@ class gginterfaceControllerSsocarige extends JControllerLegacy
 
         $email_utente = JRequest::getVar('email');
 
-        DEBUGG::log($email_utente, 'LOGINEXT', 0, 1, 0);
+        DEBUGG::log($email_utente, 'SSO_PLAINEMAIL', 0, 1, 0);
 
         $app = JFactory::getApplication();
         $db = JFactory::getDBO();
