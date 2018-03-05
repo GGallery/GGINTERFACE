@@ -29,7 +29,7 @@ class DEBUGG
             return  DEBUGG::object($object, $label , $die);
 
         if($debug_with_eco==1) {
-            echo "<div class='debugg'>";
+//            echo "<div class='debugg'>";
             if ($label)
                 echo "<label>" . $label . "</label>";
 
@@ -66,7 +66,7 @@ class DEBUGG
     }
 
 
-    public static function info($object, $label, $die = 0){
+    public static function info($object, $label = null, $die = 0){
 
         return self::log($object, $label, $die);
 
