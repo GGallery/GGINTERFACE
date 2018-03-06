@@ -34,13 +34,11 @@ class gginterfaceControllerSsocarige extends JControllerLegacy
 
     public function login() {
 
-        //        http://www.carigelearning.test/home/index.php?option=com_gginterface&task=ssocarige.loginext&id_utente=652
-
         $id_utente = JRequest::getVar('id_utente');
+        $id_edizione = JRequest::getVar('id_edizione');
 
         DEBUGG::log($id_utente, 'SSO_IDUTENTE', 0, 1, 0);
 
-        $app = JFactory::getApplication();
         $db = JFactory::getDBO();
         $query = $db->getQuery(true);
         $query->select('`id`, `username`, `password`');
@@ -48,36 +46,42 @@ class gginterfaceControllerSsocarige extends JControllerLegacy
         $query->where('id=' . $id_utente) ;
 
         $db->setQuery( $query );
-        $result = $db->loadObject();
+        $user = $db->loadObject();
 
-        if($result) {
+        $this->adminblock($user);
+
+        if($user) {
             JPluginHelper::importPlugin('user');
 
             $options = array();
             $options['action'] = 'core.login.site';
 
-            $response['username'] = $result->username;
-            $logged= $app->triggerEvent('onUserLogin', array((array)$response, $options));
+            $response['username'] = $user->username;
+            $logged= $this->_japp->triggerEvent('onUserLogin', array((array)$response, $options));
             if($logged)
-                $app->enqueueMessage("Accesso effettuato correttamente come utente ". $response['username'], 'success');
+                $this->_japp->enqueueMessage("Accesso effettuato correttamente come utente ". $response['username'], 'success');
             else {
-                $app->enqueueMessage("Problemi nell'effettuare l'accesso", 'danger');
+                $this->_japp->enqueueMessage("Problemi nell'effettuare l'accesso", 'danger');
             }
         }
         else
         {
-            $app->enqueueMessage("Credenziali errate", 'danger');
+            $this->_japp->enqueueMessage("Credenziali errate", 'danger');
         }
-        $app->redirect(JRoute::_('index.php?option=com_gglms&view=unita&alias=corsi'));
+
+        $alias='corsi';
+        if($id_edizione && $a=$this->getAliasCorso($id_edizione))
+            $alias = $a;
+
+        $this->_japp->redirect(JRoute::_("index.php?option=com_gglms&view=unita&alias=$alias"));
     }
 
     public function login_plain_email() {
 
-//        http://www.carigelearning.test/home/index.php?option=com_gginterface&task=ssocarige.loginext&email_utente=antonio@ggallery.it
-
         $email_utente = JRequest::getVar('email');
+        $id_edizione = JRequest::getVar('id_edizione');
 
-        DEBUGG::log($email_utente, 'SSO_PLAINEMAIL', 0, 1, 0);
+        DEBUGG::log($email_utente, 'SSO_PLAIN_EMAIL', 0, 1, 0);
 
         $app = JFactory::getApplication();
         $db = JFactory::getDBO();
@@ -88,16 +92,16 @@ class gginterfaceControllerSsocarige extends JControllerLegacy
 
         $db->setQuery( $query );
 
-        $result = $db->loadObject();
+        $user = $db->loadObject();
+        $this->adminblock($user);
 
-
-        if($result) {
+        if($user) {
             JPluginHelper::importPlugin('user');
 
             $options = array();
             $options['action'] = 'core.login.site';
 
-            $response['username'] = $result->username;
+            $response['username'] = $user->username;
             $logged= $app->triggerEvent('onUserLogin', array((array)$response, $options));
             if($logged)
                 $app->enqueueMessage("Accesso effettuato correttamente come utente ". $_REQUEST['username'], 'success');
@@ -109,109 +113,113 @@ class gginterfaceControllerSsocarige extends JControllerLegacy
         {
             $app->enqueueMessage("Credenziali errate", 'danger');
         }
-        $app->redirect(JRoute::_('index.php?option=com_gglms&view=unita&alias=corsi'));
+
+        $alias='corsi';
+        if($id_edizione && $a=$this->getAliasCorso($id_edizione))
+            $alias = $a;
+
+        $this->_japp->redirect(JRoute::_("index.php?option=com_gglms&view=unita&alias=$alias"));
     }
 
-//    public function login_enc_email() {
-//
-////        http://www.carigelearning.test/home/index.php?option=com_gginterface&task=ssocarige.loginext&email_utente=antonio@ggallery.it
-//        $data =  JRequest::getVar('enc_email');
-//
-//        $key = "carige00";
-//        $cipher = "aes-128-gcm";
-//        $ivlen = openssl_cipher_iv_length($cipher);
-//        $iv = openssl_random_pseudo_bytes($ivlen);
-//        $tag="GCM";
-//        $email = openssl_decrypt($data, $cipher, $key, $options=0, $iv, $tag );
-//
-//
-//
-//
-//        echo $email;
-//
-//        die();
-//
-//        $email_utente = JRequest::getVar('email_utente');
-//
-//        DEBUGG::log($email_utente, 'LOGINEXT', 0, 1, 0);
-//
-//        $app = JFactory::getApplication();
-//        $db = JFactory::getDBO();
-//        $query = $db->getQuery(true);
-//        $query->select('`id`, `username`, `password`');
-//        $query->from('`#__users`');
-//        $query->where("email='$email_utente'") ;
-//
-//        $db->setQuery( $query );
-//
-//        $result = $db->loadObject();
-//
-//
-//        if($result) {
-//            JPluginHelper::importPlugin('user');
-//
-//            $options = array();
-//            $options['action'] = 'core.login.site';
-//
-//            $response['username'] = $result->username;
-//            $logged= $app->triggerEvent('onUserLogin', array((array)$response, $options));
-//            if($logged)
-//                $app->enqueueMessage("Accesso effettuato correttamente come utente ". $_REQUEST['username'], 'success');
-//            else {
-//                $app->enqueueMessage("Problemi nell'effettuare l'accesso", 'danger');
-//            }
-//        }
-//        else
-//        {
-//            $app->enqueueMessage("Credenziali errate", 'danger');
-//        }
-//        $app->redirect(JRoute::_('index.php?option=com_gglms&view=unita&alias=corsi'));
-//    }
+    public function login_enc_email() {
 
-    public function crontest() {
+        // Encoded mail
+        $data =  JRequest::getVar('enc_email');
+        $email_utente = $this->aes_decrypt(base64_decode($data));
 
-        //        https://www.carigelearning.test/home/index.php?option=com_gginterface&task=ssocarige.crontest
-        DEBUGG::log('TEST', 'CRON',1,1,0  );
+        $id_edizione = JRequest::getVar('id_edizione');
+
+        DEBUGG::log($email_utente, 'SSO_ENC_EMAIL', 0, 1, 0);
+
+        $query = $this->_db->getQuery(true);
+        $query->select('`id`, `username`, `password`');
+        $query->from('`#__users`');
+        $query->where("email='$email_utente'") ;
+
+        $this->_db->setQuery( $query );
+
+        $user = $this->_db->loadObject();
+
+        $this->adminblock($user);
+
+        if($user) {
+            JPluginHelper::importPlugin('user');
+
+            $options = array();
+            $options['action'] = 'core.login.site';
+
+            $response['username'] = $user->username;
+            $logged= $this->_japp->triggerEvent('onUserLogin', array((array)$response, $options));
+            if($logged)
+                $this->_japp->enqueueMessage("Accesso effettuato correttamente come utente ". $_REQUEST['username'], 'success');
+            else {
+                $this->_japp->enqueueMessage("Problemi nell'effettuare l'accesso", 'danger');
+            }
+        }
+        else
+        {
+            $this->_japp->enqueueMessage("Credenziali errate", 'danger');
+        }
+
+        $alias='corsi';
+        if($id_edizione && $a=$this->getAliasCorso($id_edizione))
+            $alias = $a;
+
+        $this->_japp->redirect(JRoute::_("index.php?option=com_gglms&view=unita&alias=$alias"));
+    }
+
+    private function aes_decrypt($data) {
+        try {
+            $encryption_key = 'po5NBCHk3mIeGiwt5DKXR5Rq9AqamWD4';
+            $iv = '8947az34awl34kjq';
+            $res = openssl_decrypt($data, 'AES-256-CBC', $encryption_key, 0, $iv);
+        } catch (Exception $e)
+        {
+            DEBUGG::log('DECRYPT' , 'ERROR', 1, 1, 1);
+        }
+        return $res;
+    }
+
+
+    public function carige_encrypt() {
+
+        $data = JRequest::getVar('enc_email');
+
+        $key = 'po5NBCHk3mIeGiwt5DKXR5Rq9AqamWD4';
+        $iv = '8947az34awl34kjq';
+        $encrypted = openssl_encrypt($data, 'AES-256-CBC', $key, 0, $iv);
+
+        echo "\n EncryptedData:" .  base64_encode($encrypted);
+
+        $this->_japp->close();
+    }
+
+    private function adminblock($user){
+        $groups = JAccess::getGroupsByUser($user->id);
+        if(in_array(8, $groups)){
+            throw new RuntimeException('Accesso negato in questa modalità per account amministratori', E_USER_ERROR);
+        }
 
     }
 
-//    public function decode_email($data) {
-//
-//        $key = "carige00";
-//        $cipher = "aes-128-gcm";
-//        $ivlen = openssl_cipher_iv_length($cipher);
-//        $iv = openssl_random_pseudo_bytes($ivlen);
-//        $tag="GCM";
-//        $email = openssl_decrypt($data, $cipher, $key, $options=0, $iv, $tag );
-//
-//        return $email;
-//
-//    }
+    private function getAliasCorso($id_edizione) {
 
-//    public function  encriptiontest(){
-//
-//        $key = "carige00";
-//
-//        echo $key."<br>";
-//
-//        $plaintext = "antonio@ggallery.it";
-//        $cipher = "aes-128-gcm";
-//        $tag="GCM";
-//
-//        if (in_array($cipher, openssl_get_cipher_methods()))
-//        {
-//            $ivlen = openssl_cipher_iv_length($cipher);
-//            $iv = openssl_random_pseudo_bytes($ivlen);
-//            $ciphertext = openssl_encrypt($plaintext, $cipher, $key, $options=0, $iv, $tag );
-//            echo $ciphertext."<br>";
-//
-//            //store $cipher, $iv, and $tag for decryption later
-//            $original_plaintext = openssl_decrypt($ciphertext, $cipher, $key, $options=0, $iv, $tag );
-//            echo $original_plaintext."\n";
-//        }
-//
-//    }
-//
+        try {
+            $query = $this->_db->getQuery(true);
 
+            $query->select('u.alias');
+            $query->from('#__ggif_edizione_unita_gruppo as g');
+            $query->join('join', '#__gg_unit as u ON u.id g.id_unita');
+            $query->where('g.id_id_edizione = ' . $id_edizione);
+
+            $this->_db->setQuery($query);
+            $alias = $this->_db->loadResult();
+        }catch (Exception $e) {
+            DEBUGG::info($e, "Errore identificazione corso", 0,1,1);
+            return false;
+        }
+
+        return $alias;
+    }
 
 }
