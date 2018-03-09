@@ -83,6 +83,9 @@ class gginterfaceControllerSsocarige extends JControllerLegacy
 
         DEBUGG::log($email_utente, 'SSO_PLAIN_EMAIL', 0, 1, 0);
 
+        if($email_utente == ""  || !$email_utente)
+            throw new RuntimeException('Parametro email non corretto', E_USER_ERROR);
+
         $app = JFactory::getApplication();
         $db = JFactory::getDBO();
         $query = $db->getQuery(true);
@@ -131,6 +134,9 @@ class gginterfaceControllerSsocarige extends JControllerLegacy
 
         DEBUGG::log($email_utente, 'SSO_ENC_EMAIL', 0, 1, 0);
 
+        if($email_utente == ""  || !$email_utente)
+            throw new RuntimeException('Parametro email non corretto', E_USER_ERROR);
+
         $query = $this->_db->getQuery(true);
         $query->select('`id`, `username`, `password`');
         $query->from('`#__users`');
@@ -139,6 +145,7 @@ class gginterfaceControllerSsocarige extends JControllerLegacy
         $this->_db->setQuery( $query );
 
         $user = $this->_db->loadObject();
+
 
         $this->adminblock($user);
 
