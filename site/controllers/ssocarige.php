@@ -69,7 +69,7 @@ class gginterfaceControllerSsocarige extends JControllerLegacy
             $this->_japp->enqueueMessage("Credenziali errate", 'danger');
         }
 
-        $alias='corsi';
+        $alias='corsi_fad';
         if($id_edizione && $a=$this->getAliasCorso($id_edizione))
             $alias = $a;
 
@@ -117,7 +117,7 @@ class gginterfaceControllerSsocarige extends JControllerLegacy
             $app->enqueueMessage("Credenziali errate", 'danger');
         }
 
-        $alias='corsi';
+        $alias='corsi_fad';
         if($id_edizione && $a=$this->getAliasCorso($id_edizione))
             $alias = $a;
 
@@ -168,7 +168,7 @@ class gginterfaceControllerSsocarige extends JControllerLegacy
             $this->_japp->enqueueMessage("Accesso negato per questo account", 'danger');
         }
 
-        $alias='corsi';
+        $alias='corsi_fad';
         if($id_edizione && $a=$this->getAliasCorso($id_edizione))
             $alias = $a;
 
