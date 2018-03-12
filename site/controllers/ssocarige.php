@@ -69,8 +69,7 @@ class gginterfaceControllerSsocarige extends JControllerLegacy
             $this->_japp->enqueueMessage("Credenziali errate", 'danger');
         }
 
-        $alias='corsi_fad';
-        if($id_edizione && $a=$this->getAliasCorso($id_edizione))
+        if($id_edizione && $alias=$this->getAliasCorso($id_edizione))
             $this->_japp->redirect(JRoute::_("index.php?option=com_gglms&view=unita&alias=$alias"));
 
         $this->_japp->redirect("https://www.carigelearning.it/home/corsi_fad.html");
@@ -118,11 +117,10 @@ class gginterfaceControllerSsocarige extends JControllerLegacy
             $app->enqueueMessage("Credenziali errate", 'danger');
         }
 
-        $alias='corsi_fad';
-        if($id_edizione && $a=$this->getAliasCorso($id_edizione))
-            $alias = $a;
+        if($id_edizione && $alias=$this->getAliasCorso($id_edizione))
+            $this->_japp->redirect(JRoute::_("index.php?option=com_gglms&view=unita&alias=$alias"));
 
-        $this->_japp->redirect(JRoute::_("index.php?option=com_gglms&view=unita&alias=$alias"));
+        $this->_japp->redirect("https://www.carigelearning.it/home/corsi_fad.html");
     }
 
     public function login_enc_email() {
@@ -169,11 +167,10 @@ class gginterfaceControllerSsocarige extends JControllerLegacy
             $this->_japp->enqueueMessage("Accesso negato per questo account", 'danger');
         }
 
-        $alias='corsi_fad';
-        if($id_edizione && $a=$this->getAliasCorso($id_edizione))
-            $alias = $a;
+        if($id_edizione && $alias=$this->getAliasCorso($id_edizione))
+            $this->_japp->redirect(JRoute::_("index.php?option=com_gglms&view=unita&alias=$alias"));
 
-        $this->_japp->redirect(JRoute::_("index.php?option=com_gglms&view=unita&alias=$alias"));
+        $this->_japp->redirect("https://www.carigelearning.it/home/corsi_fad.html");
     }
 
     private function aes_decrypt($data) {
