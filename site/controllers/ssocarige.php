@@ -71,9 +71,10 @@ class gginterfaceControllerSsocarige extends JControllerLegacy
 
         $alias='corsi_fad';
         if($id_edizione && $a=$this->getAliasCorso($id_edizione))
-            $alias = $a;
+            $this->_japp->redirect(JRoute::_("index.php?option=com_gglms&view=unita&alias=$alias"));
 
-        $this->_japp->redirect(JRoute::_("index.php?option=com_gglms&view=unita&alias=$alias"));
+        $this->_japp->redirect("https://www.carigelearning.it/home/corsi_fad.html");
+
     }
 
     public function login_plain_email() {
