@@ -160,12 +160,12 @@ class gginterfaceControllerSsocarige extends JControllerLegacy
             if($logged)
                 $this->_japp->enqueueMessage("Accesso effettuato correttamente come utente ". $_REQUEST['username'], 'success');
             else {
-                $this->_japp->enqueueMessage("Problemi nell'effettuare l'accesso", 'danger');
+                $this->_japp->enqueueMessage("Accesso negato per questo account", 'danger');
             }
         }
         else
         {
-            $this->_japp->enqueueMessage("Credenziali errate", 'danger');
+            $this->_japp->enqueueMessage("Accesso negato per questo account", 'danger');
         }
 
         $alias='corsi';
