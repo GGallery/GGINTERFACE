@@ -82,11 +82,11 @@ class gginterfaceControllerBatchcarige extends JControllerLegacy
 
     private function getExistingUserList(){
 
-//        TODO CORREGGE TABELLA
+
         try {
             $query = $this->_db->getQuery(true);
             $query->select('`id`');
-            $query->from('`#__users_tmp`');
+            $query->from('`#__users`');
             $this->_db->setQuery($query);
             $existingUserList = $this->_db->loadColumn(0);
         }catch (Exception $e) {
@@ -108,7 +108,7 @@ class gginterfaceControllerBatchcarige extends JControllerLegacy
         $object->sendEmail = 0;
         $object->registerDate = date();
 
-        $insert = $this->_db->insertObject('#__users_tmp', $object);
+        $insert = $this->_db->insertObject('#__users', $object);
 
         if($insert) {
             $query = "INSERT IGNORE INTO #__user_usergroup_map (user_id, group_id) VALUES ($user[0] , 2)";
@@ -169,7 +169,7 @@ class gginterfaceControllerBatchcarige extends JControllerLegacy
 
     private function getExistingEdizioni(){
 
-//        TODO CORREGGE TABELLA
+
         try {
             $query = $this->_db->getQuery(true);
             $query->select('`id_edizione`');
@@ -316,8 +316,8 @@ class gginterfaceControllerBatchcarige extends JControllerLegacy
             $this->_db->quoteName('group_id') . ' not in (1,2,6,7,8,9,20)'
         );
 
-//        TODO cambiare nome tabella
-        $query->delete($this->_db->quoteName('#__user_usergroup_map_tmp'));
+
+        $query->delete($this->_db->quoteName('#__user_usergroup_map'));
         $query->where($conditions);
 
         $this->_db->setQuery($query);
@@ -346,9 +346,9 @@ class gginterfaceControllerBatchcarige extends JControllerLegacy
 
     public function setUsergroupUserMap(){
 
-//        TODO Cambiare nome tabella
+
         try {
-            $query = 'INSERT IGNORE INTO #__user_usergroup_map_tmp ';
+            $query = 'INSERT IGNORE INTO #__user_usergroup_map';
             $query .= ' SELECT m.user_id AS user_id, g.id_gruppo AS group_id FROM  crg_ggif_user_edizione_map AS m INNER JOIN crg_ggif_edizione_unita_gruppo AS g ON g.id_edizione = m.edizione_id';
 
             $this->_db->setQuery($query);
