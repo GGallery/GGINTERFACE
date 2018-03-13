@@ -106,7 +106,7 @@ class gginterfaceControllerBatchcarige extends JControllerLegacy
         $object->password = md5($user[4]);
         $object->block = 0;
         $object->sendEmail = 0;
-        $object->registerDate = date();
+        $object->registerDate = date('Y/m/d H:i:s', time());
 
         $insert = $this->_db->insertObject('#__users', $object);
 
