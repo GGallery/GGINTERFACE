@@ -72,7 +72,7 @@ class gginterfaceControllerSsocarige extends JControllerLegacy
         if($id_edizione && $alias=$this->getAliasCorso($id_edizione))
             $this->_japp->redirect(JRoute::_("index.php?option=com_gglms&view=unita&alias=$alias"));
 
-        $this->_japp->redirect("https://www.carigelearning.it/home/corsi_fad.html");
+        $this->_japp->redirect(JRoute::_('index.php?option=com_content&view=article&id=25'));
 
     }
 
@@ -120,7 +120,7 @@ class gginterfaceControllerSsocarige extends JControllerLegacy
         if($id_edizione && $alias=$this->getAliasCorso($id_edizione))
             $this->_japp->redirect(JRoute::_("index.php?option=com_gglms&view=unita&alias=$alias"));
 
-        $this->_japp->redirect("https://www.carigelearning.it/home/corsi_fad.html");
+        $this->_japp->redirect(JRoute::_('index.php?option=com_content&view=article&id=25'));
     }
 
     public function login_enc_email() {
@@ -131,7 +131,7 @@ class gginterfaceControllerSsocarige extends JControllerLegacy
 
         $id_edizione = JRequest::getVar('id_edizione');
 
-        DEBUGG::log($email_utente, 'SSO_ENC_EMAIL', 0, 1, 0);
+        DEBUGG::log($email_utente.":".$data, 'SSO_ENC_EMAIL', 0, 1, 0);
 
         if($email_utente == ""  || !$email_utente)
             throw new RuntimeException('Parametro email non corretto', E_USER_ERROR);
@@ -144,9 +144,6 @@ class gginterfaceControllerSsocarige extends JControllerLegacy
         $this->_db->setQuery( $query );
 
         $user = $this->_db->loadObject();
-
-
-        $this->adminblock($user);
 
         if($user) {
             JPluginHelper::importPlugin('user');
@@ -170,7 +167,7 @@ class gginterfaceControllerSsocarige extends JControllerLegacy
         if($id_edizione && $alias=$this->getAliasCorso($id_edizione))
             $this->_japp->redirect(JRoute::_("index.php?option=com_gglms&view=unita&alias=$alias"));
 
-        $this->_japp->redirect("https://www.carigelearning.it/home/corsi_fad.html");
+        $this->_japp->redirect(JRoute::_('index.php?option=com_content&view=article&id=25'));
     }
 
     private function aes_decrypt($data) {
@@ -204,7 +201,6 @@ class gginterfaceControllerSsocarige extends JControllerLegacy
         if(in_array(8, $groups)){
             throw new RuntimeException('Accesso negato in questa modalità per account amministratori', E_USER_ERROR);
         }
-
     }
 
     private function getAliasCorso($id_edizione) {
@@ -214,13 +210,14 @@ class gginterfaceControllerSsocarige extends JControllerLegacy
 
             $query->select('u.alias');
             $query->from('#__ggif_edizione_unita_gruppo as g');
-            $query->join('join', '#__gg_unit as u ON u.id g.id_unita');
-            $query->where('g.id_id_edizione = ' . $id_edizione);
+            $query->join('inner', '#__gg_unit as u ON u.id = g.id_unita');
+            $query->where('g.id_edizione = ' . $id_edizione);
 
             $this->_db->setQuery($query);
             $alias = $this->_db->loadResult();
         }catch (Exception $e) {
             DEBUGG::info($e, "Errore identificazione corso", 0,1,1);
+            DEBUGG::info((string)$query, "Query che ha dato l'errore", 0,1,1);
             return false;
         }
 
