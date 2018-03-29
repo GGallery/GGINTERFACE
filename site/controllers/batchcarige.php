@@ -30,8 +30,6 @@ class gginterfaceControllerBatchcarige extends JControllerLegacy
         $this->_db = JFactory::getDbo();
     }
 
-
-
     public function batch_anag() {
 
         $filename = '../batch/LABEL_ANAG.txt';
@@ -118,7 +116,6 @@ class gginterfaceControllerBatchcarige extends JControllerLegacy
         }
         return true;
     }
-
 
     public function batch_edizioni() {
 
@@ -280,7 +277,6 @@ class gginterfaceControllerBatchcarige extends JControllerLegacy
         return $text;
     }
 
-
     public function batch_iscrizioni(){
 
         $filename = '../batch/LABEL_ISCRIZIONI.txt';
@@ -310,18 +306,18 @@ class gginterfaceControllerBatchcarige extends JControllerLegacy
 
     public function clearUserGroupMap() {
 
-        $query = $this->_db->getQuery(true);
-
-        $conditions = array(
-            $this->_db->quoteName('group_id') . ' not in (1,2,6,7,8,9,20)'
-        );
-
-
-        $query->delete($this->_db->quoteName('#__user_usergroup_map'));
-        $query->where($conditions);
-
-        $this->_db->setQuery($query);
-        $this->_db->execute();
+//        $query = $this->_db->getQuery(true);
+//
+//        //ID 20 GESTIONE CORSI
+//        $conditions = array(
+//            $this->_db->quoteName('group_id') . ' not in (1,2,6,7,8,9,20)'
+//        );
+//
+//        $query->delete($this->_db->quoteName('#__user_usergroup_map'));
+//        $query->where($conditions);
+//
+//        $this->_db->setQuery($query);
+//        $this->_db->execute();
 
         return true;
     }
@@ -346,8 +342,7 @@ class gginterfaceControllerBatchcarige extends JControllerLegacy
 
     public function setUsergroupUserMap(){
 
-
-        try {
+         try {
             $query = 'INSERT IGNORE INTO #__user_usergroup_map';
             $query .= ' SELECT m.user_id AS user_id, g.id_gruppo AS group_id FROM  crg_ggif_user_edizione_map AS m INNER JOIN crg_ggif_edizione_unita_gruppo AS g ON g.id_edizione = m.edizione_id';
 

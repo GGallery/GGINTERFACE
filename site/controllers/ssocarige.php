@@ -131,7 +131,7 @@ class gginterfaceControllerSsocarige extends JControllerLegacy
 
         $id_edizione = JRequest::getVar('id_edizione');
 
-        DEBUGG::log($email_utente.":".$data, 'SSO_ENC_EMAIL', 0, 1, 0);
+        DEBUGG::log($email_utente, 'SSO_ENC_EMAIL', 0, 1, 0);
 
         if($email_utente == ""  || !$email_utente)
             throw new RuntimeException('Parametro email non corretto', E_USER_ERROR);
@@ -181,7 +181,6 @@ class gginterfaceControllerSsocarige extends JControllerLegacy
         }
         return $res;
     }
-
 
     public function carige_encrypt() {
 
