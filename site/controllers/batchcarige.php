@@ -30,6 +30,12 @@ class gginterfaceControllerBatchcarige extends JControllerLegacy
         $this->_db = JFactory::getDbo();
     }
 
+    /**
+     * PROCEDURA BATCH IMPORT ANAGRAFICA
+     *
+     *
+     */
+
     public function batch_anag() {
 
         $filename = '../batch/LABEL_ANAG.txt';
@@ -116,6 +122,12 @@ class gginterfaceControllerBatchcarige extends JControllerLegacy
         }
         return true;
     }
+
+    /**
+     * PROCEDURA BATCH IMPORT EDIZIONI
+     *
+     *
+     */
 
     public function batch_edizioni() {
 
@@ -277,6 +289,11 @@ class gginterfaceControllerBatchcarige extends JControllerLegacy
         return $text;
     }
 
+    /**
+     * PROCEDURA BATCH ISCRIZIONI
+     *
+     *
+     */
     public function batch_iscrizioni(){
 
         $filename = '../batch/LABEL_ISCRIZIONI.txt';
@@ -342,7 +359,7 @@ class gginterfaceControllerBatchcarige extends JControllerLegacy
 
     public function setUsergroupUserMap(){
 
-         try {
+        try {
             $query = 'INSERT IGNORE INTO #__user_usergroup_map';
             $query .= ' SELECT m.user_id AS user_id, g.id_gruppo AS group_id FROM  crg_ggif_user_edizione_map AS m INNER JOIN crg_ggif_edizione_unita_gruppo AS g ON g.id_edizione = m.edizione_id';
 
@@ -353,5 +370,195 @@ class gginterfaceControllerBatchcarige extends JControllerLegacy
         }
 
     }
+
+
+    /**
+     * PROCEDURA BATCH AGGIORNAMENTO TEMPO CONTEGGIABILE
+     *
+     *
+     */
+    public function updateConteggiabile(){
+
+        $contenuto = $this->getContenuto();
+
+        if(!count($contenuto)){
+            echo "END";
+            $this->_japp->close();
+        }
+
+        $userList = $this->getUserIdToAnalyze($contenuto['id_contenuto']);
+
+
+        foreach ($userList as $item) {
+            $user_id = $item;
+            $tracciatoUtente = $this->getTracciatoUtente($contenuto['id_contenuto'], $user_id);
+
+            $durata_contenuto = $contenuto['durata'];
+            $amount = 0;
+            foreach ($tracciatoUtente as $item) {
+                $amount += $item['permanenza'];
+                if($amount < $durata_contenuto )
+                    $disponibile = $item['permanenza'];
+                else
+                    $disponibile = $durata_contenuto - $amount + $item['permanenza'];
+                $this->updateTimeConteggiabile($item['id'], $disponibile);
+            }
+            echo ' ||| '.$contenuto['id_contenuto']." -> ".$user_id;
+        }
+
+        $this->_japp->close();
+
+    }
+
+    private function getContenuto(){
+
+        try {
+            $query = $this->_db->getQuery(true);
+            $query->select(' DISTINCT l.id_contenuto, c.durata');
+            $query->from('#__gg_log as l');
+            $query->join('inner', '#__gg_contenuti as c ON c.id = l.id_contenuto');
+            $query->where('l.permanenza_conteggiabile IS NULL');
+            $query->setLimit('1');
+            $this->_db->setQuery($query);
+            $item = $this->_db->loadAssoc();
+        }catch (Exception $e) {
+            return false;
+        }
+        return $item;
+    }
+
+    private function getUserIdToAnalyze($contenuto_id){
+
+        try {
+            $query = $this->_db->getQuery(true);
+            $query->select(' DISTINCT log.id_utente');
+            $query->from('#__gg_log as log');
+            $query->where('log.id_contenuto = ' . $contenuto_id);
+            $query->where('log.permanenza_conteggiabile is null');
+            $query->setLimit('100');
+            $this->_db->setQuery($query);
+            $items = $this->_db->loadColumn();
+        }catch (Exception $e) {
+            return false;
+        }
+        return $items;
+    }
+
+    private function getTracciatoUtente($contenuto_id, $user_id){
+
+        try {
+            $query = $this->_db->getQuery(true);
+            $query->select('*');
+            $query->from('#__gg_log as log');
+            $query->where('log.id_contenuto = ' . $contenuto_id);
+            $query->where('log.id_utente = ' . $user_id);
+            $this->_db->setQuery($query);
+            $item = $this->_db->loadAssoclist();
+        }catch (Exception $e) {
+            return false;
+        }
+        return $item;
+
+    }
+
+    private function updateTimeConteggiabile($id, $time){
+        if(!$time)
+            $time=0;
+
+        $query = "UPDATE #__gg_log SET permanenza_conteggiabile=$time WHERE id=$id";
+
+        $this->_db->setQuery($query);
+        $this->_db->execute();
+    }
+
+
+
+    /**
+     * PROCEDURA BATCH HOME LEARNING CALCULATOR
+     *
+     *
+     */
+    public function batch_HLCalculator(){
+
+        $limit=JRequest::getVar('limit');
+
+        $currentDataSet = $this->getDataSet($limit);
+        if(!count($currentDataSet))
+            echo "END";
+
+        foreach ($currentDataSet as $item) {
+            $time = $this->getDayTotalTime($item);
+            $time = ($time>0) ? $time : 0 ;
+
+            if($time>0)
+                echo $item['id'] . "-->" . $time;
+            else
+                $time = 0;
+
+            echo "|";
+            $this->updateTime($item['id'], $time);
+        }
+
+        $this->_japp->close();
+    }
+
+    private function getDataSet($limit){
+        try {
+            $query = $this->_db->getQuery(true);
+            $query->select('*');
+            $query->from('`#__ggif_cartellini_import`');
+            $query->where('totale IS NULL');
+            $query->setLimit($limit);
+            $this->_db->setQuery($query);
+            $dataset = $this->_db->loadAssocList();
+        }catch (Exception $e) {
+            return false;
+        }
+        return $dataset;
+    }
+
+    private function getDayTotalTime($item){
+        try {
+            $query =  " SELECT SUM(permanenza_conteggiabile) ";
+            $query .= " FROM #__gg_log ";
+            $query .= " WHERE id_utente = ". $item['user_id'];
+
+            $periodo1 = $this->entrata($item);
+            $periodo2 = $this->uscita($item);
+
+            $query .= " AND (". $periodo1. " OR ". $periodo2 .")";
+            $this->_db->setQuery($query);
+
+            $totaltime = $this->_db->loadResult();
+
+        }catch (Exception $e) {
+            echo $e;
+        }
+        return $totaltime;
+    }
+
+    private function entrata($item){
+        $ora = substr(trim("0" . $item['entrata']), -4, 2);
+        $minuti = substr(trim($item['entrata']), -2);
+
+        return "data_accesso BETWEEN '".$item['data']." 00:00:00' AND '".$item['data']." ".$ora.":".$minuti.":00'";
+    }
+
+    private function uscita($item){
+        $ora = substr(trim("0" . $item['uscita']), -4, 2);
+        $minuti = substr(trim($item['uscita']), -2);
+
+        return "data_accesso BETWEEN '".$item['data']." ".$ora.":".$minuti.":00' AND '".$item['data']." 23:59:59'";
+    }
+
+    private function updateTime($id, $time){
+
+        $query = "UPDATE #__ggif_cartellini_import SET totale=$time WHERE id=$id";
+
+        $this->_db->setQuery($query);
+        $this->_db->execute();
+
+    }
+
 
 }
