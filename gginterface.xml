@@ -49,7 +49,12 @@
 
 		<files folder="admin">
 			<filename>index.html</filename>
+			<filename>gginterface.php</filename>
+			<filename>controller.php</filename>
 			<folder>models</folder>
+			<folder>controllers</folder>
+			<folder>views</folder>
+			<folder>jupload</folder>
 		</files>
 	</administration>
 
