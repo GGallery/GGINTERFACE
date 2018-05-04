@@ -31,6 +31,7 @@ class gginterfaceViewUploadAttestato extends JViewLegacy {
         JHtml::_('bootstrap.framework');
         JHtml::_('jquery.ui', array('core', 'sortable'));
         $document = JFactory::getDocument();
+        JToolBarHelper::title("Caricamento Attestati Residenziali ", 'gginterface');
         $document->addStyleSheet($host . 'administrator/components/com_gginterface/jupload/css/jquery.fileupload.css');
         $document->addStyleSheet($host . 'administrator/components/com_gginterface/jupload/css/jquery.fileupload-ui.css');
         $document->addScript($host . 'administrator/components/com_gginterface/jupload/js/jquery.fileupload.js');

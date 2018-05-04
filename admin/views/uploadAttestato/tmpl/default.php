@@ -32,7 +32,7 @@ defined('_JEXEC') or die('Restricted access');
             <!-- QUI INIZIA IL FILE UPLOAD     -->
 
 
-                <div class="containerUpload">
+                <div class="containerUpload">Scegli i file da caricare, puoi effettuare una scelta multipla<br><br>
                     <?php //echo JHtml::_('sliders.panel', JText::_('Caricamento file multimediali'), 'Upload'); ?>
                     <!-- The fileinput-button span is used to style the file input field as button -->
                     <span class="btn btn-success fileinput-button">

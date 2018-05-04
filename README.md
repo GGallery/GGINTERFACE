@@ -4,6 +4,9 @@ CHANGELOG
 
 F:Frontend, B:Backend, D:Database, G:Generale
 
+1.0.20
+
+ - B: vista admin per caricamento attestati
 1.0.19
  - G: Implementato Batch HomeLearning
 
