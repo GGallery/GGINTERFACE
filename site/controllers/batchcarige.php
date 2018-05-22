@@ -570,7 +570,7 @@ class gginterfaceControllerBatchcarige extends JControllerLegacy
        $colonne= array_keys($data[0]);
 
 
-       $file=fopen($filepath = JPATH_BASE . "/batch/label_avanzamento.csv","w");
+        $file=fopen($filepath = "../batch/LABEL_AVANZAMENTO.txt","w");
        fputcsv($file,$colonne,";");
        foreach ($data as &$row){
 
