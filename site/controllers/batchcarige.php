@@ -560,5 +560,26 @@ class gginterfaceControllerBatchcarige extends JControllerLegacy
 
     }
 
+    public function batch_avanzamento(){
+
+       $query = $this->_db->getQuery(true);
+       $query->select('id_corso as id_edizione, id_user, data_primo_accesso as \'data primo accesso\', data_ultimo_accesso as \'data ultimo accesso\', data_completamento_edizione as \'data completamento edizione\', percentuale_completamento as \'percentuale  completamento\'');
+       $query->from('`#__gg_view_carige_learning_batch`');
+       $this->_db->setQuery($query);
+       $data = $this->_db->loadAssocList();
+       $colonne= array_keys($data[0]);
+
+
+        $file=fopen($filepath = "../batch/LABEL_AVANZAMENTO.txt","w");
+       fputcsv($file,$colonne,";");
+       foreach ($data as &$row){
+
+
+           fputcsv($file,$row,";");
+       }
+
+       fclose($file);
+    }
+
 
 }
