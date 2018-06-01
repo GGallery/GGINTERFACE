@@ -462,7 +462,7 @@ class gginterfaceControllerBatchcarige extends JControllerLegacy
     }
 
     private function updateTimeConteggiabile($id, $time){
-        if(!$time)
+        if(!$time || $time < 0)
             $time=0;
 
         $query = "UPDATE #__gg_log SET permanenza_conteggiabile=$time WHERE id=$id";
@@ -562,6 +562,25 @@ class gginterfaceControllerBatchcarige extends JControllerLegacy
 
     }
 
+    private function moveImportToCartellini(){
+        /**
+        Sposto dalla tabella import alla tabella cartellini
+         **/
+        $query = "INSERT INTO #__ggif_cartellini (user_id, data, entrata, uscita, totale)
+                  SELECT user_id, data, entrata, uscita, totale
+                  FROM #__ggif_cartellini_import 
+                  WHERE totale is not null";
+
+        $this->_db->setQuery($query);
+        return $this->_db->execute();
+
+    }
+
+    /**
+     * PROCEDURA BATCH AVANZAMENTO FORMAZIONE UTENTE
+     *
+     *
+     */
     public function batch_avanzamento(){
 
         $query = $this->_db->getQuery(true);
@@ -581,21 +600,6 @@ class gginterfaceControllerBatchcarige extends JControllerLegacy
         }
 
         fclose($file);
-    }
-
-    /**
-    Sposto dalla tabella import alla tabella cartellini
-     **/
-    private function moveImportToCartellini(){
-
-        $query = "INSERT INTO #__ggif_cartellini (user_id, data, entrata, uscita, totale)
-                  SELECT user_id, data, entrata, uscita, totale
-                  FROM #__ggif_cartellini_import 
-                  WHERE totale is not null";
-
-        $this->_db->setQuery($query);
-        return $this->_db->execute();
-
     }
 
 
