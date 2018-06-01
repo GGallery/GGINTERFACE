@@ -483,8 +483,10 @@ class gginterfaceControllerBatchcarige extends JControllerLegacy
         $limit=JRequest::getVar('limit');
 
         $currentDataSet = $this->getDataSet($limit);
-        if(!count($currentDataSet))
+        if(!count($currentDataSet)) {
+            $this->moveImportToCartellini();
             echo "END";
+        }
 
         foreach ($currentDataSet as $item) {
             $time = $this->getDayTotalTime($item);
@@ -562,23 +564,38 @@ class gginterfaceControllerBatchcarige extends JControllerLegacy
 
     public function batch_avanzamento(){
 
-       $query = $this->_db->getQuery(true);
-       $query->select('id_corso as id_edizione, id_user, data_primo_accesso as \'data primo accesso\', data_ultimo_accesso as \'data ultimo accesso\', data_completamento_edizione as \'data completamento edizione\', percentuale_completamento as \'percentuale  completamento\'');
-       $query->from('`#__gg_view_carige_learning_batch`');
-       $this->_db->setQuery($query);
-       $data = $this->_db->loadAssocList();
-       $colonne= array_keys($data[0]);
+        $query = $this->_db->getQuery(true);
+        $query->select('id_corso as id_edizione, id_user, data_primo_accesso as \'data primo accesso\', data_ultimo_accesso as \'data ultimo accesso\', data_completamento_edizione as \'data completamento edizione\', percentuale_completamento as \'percentuale  completamento\'');
+        $query->from('`#__gg_view_carige_learning_batch`');
+        $this->_db->setQuery($query);
+        $data = $this->_db->loadAssocList();
+        $colonne= array_keys($data[0]);
 
 
         $file=fopen($filepath = "../batch/LABEL_AVANZAMENTO.txt","w");
-       fputcsv($file,$colonne,";");
-       foreach ($data as &$row){
+        fputcsv($file,$colonne,";");
+        foreach ($data as &$row){
 
 
-           fputcsv($file,$row,";");
-       }
+            fputcsv($file,$row,";");
+        }
 
-       fclose($file);
+        fclose($file);
+    }
+
+    /**
+    Sposto dalla tabella import alla tabella cartellini
+     **/
+    private function moveImportToCartellini(){
+
+        $query = "INSERT INTO #__ggif_cartellini (user_id, data, entrata, uscita, totale)
+                  SELECT user_id, data, entrata, uscita, totale
+                  FROM #__ggif_cartellini_import 
+                  WHERE totale is not null";
+
+        $this->_db->setQuery($query);
+        return $this->_db->execute();
+
     }
 
 
