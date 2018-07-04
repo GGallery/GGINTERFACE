@@ -307,7 +307,7 @@ class gginterfaceControllerBatchcarige extends JControllerLegacy
             $file = explode("\n", fread($fp, filesize($filename)));
             foreach ($file as $single){
                 if($single)
-                    $iscrizioniList [] = explode(";" , $single);
+                    $iscrizioniList [] = str_replace(";" , ",", $single);
             }
         }
 
@@ -345,13 +345,20 @@ class gginterfaceControllerBatchcarige extends JControllerLegacy
         $this->_db->setQuery($query);
         $this->_db->execute();
 
-        foreach ($iscrizioniList as $iscrizione){
-            $object = new stdClass();
-            $object->edizione_id = $iscrizione[0];
-            $object->user_id = $iscrizione[1];
+        $columns = array('edizione_id', 'user_id');
 
-            if(!$this->_db->insertObject('#__ggif_user_edizione_map', $object))
-                throw new BadMethodCallException('Errore nella procedura storeIscrizioniTemp', E_USER_ERROR);
+        $offset = 0;
+        $lenght = 200;
+
+        while ($offset < count($iscrizioniList)){
+            $values =  array_slice ( $iscrizioniList , $offset , $lenght,  FALSE  );
+            $query = $this->_db->getQuery(true);
+            $query->insert($this->_db->quoteName('#__ggif_user_edizione_map'));
+            $query->columns($columns);
+            $query->values($values);
+            $this->_db->setQuery($query);
+            $this->_db->query();
+            $offset += $lenght;
         }
 
         return true;
@@ -361,7 +368,7 @@ class gginterfaceControllerBatchcarige extends JControllerLegacy
 
         try {
             $query = 'INSERT IGNORE INTO #__user_usergroup_map';
-            $query .= ' SELECT m.user_id AS user_id, g.id_gruppo AS group_id FROM  crg_ggif_user_edizione_map AS m INNER JOIN crg_ggif_edizione_unita_gruppo AS g ON g.id_edizione = m.edizione_id';
+            $query .= ' SELECT m.user_id AS user_id, g.id_gruppo AS group_id FROM  #__ggif_user_edizione_map AS m INNER JOIN #__ggif_edizione_unita_gruppo AS g ON g.id_edizione = m.edizione_id';
 
             $this->_db->setQuery($query);
             $this->_db->execute();
