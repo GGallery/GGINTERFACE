@@ -572,14 +572,17 @@ class gginterfaceControllerBatchcarige extends JControllerLegacy
     public function batch_avanzamento(){
 
         $query = $this->_db->getQuery(true);
-        $query->select('id_corso as id_edizione, id_user, data_primo_accesso as \'data primo accesso\', data_ultimo_accesso as \'data ultimo accesso\', data_completamento_edizione as \'data completamento edizione\', percentuale_completamento as \'percentuale  completamento\'');
-        $query->from('`#__gg_view_carige_learning_batch`');
+        $query->select('e.id_edizione as id_edizione, id_user, if(data_primo_accesso=\'0000-00-00\',\'\',data_primo_accesso) as \'data primo accesso\', if(data_ultimo_accesso=\'0000-00-00\',\'\',data_ultimo_accesso) 
+                        as \'data ultimo accesso\', if(data_completamento_edizione=\'0000-00-00\',\'\',data_completamento_edizione )as \'data completamento edizione\', 
+                        percentuale_completamento as \'percentuale completamento\'');
+        $query->from('crg_gg_view_carige_learning_batch as b inner join crg_ggif_edizione_unita_gruppo as e on b.id_corso=e.id_unita');
+        $query->where('id_user<>652 and `timestamp`> CURRENT_DATE');
         $this->_db->setQuery($query);
         $data = $this->_db->loadAssocList();
         $colonne= array_keys($data[0]);
 
 
-        $file=fopen($filepath = "../batch/LABEL_AVANZAMENTO.txt","w");
+        $file=fopen($filepath = "../batch/LABEL_AVANZAMENTO_TEST.txt","w");
         fputcsv($file,$colonne,";");
         foreach ($data as &$row){
 
