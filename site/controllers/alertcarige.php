@@ -67,7 +67,7 @@ class gginterfaceControllerAlertcarige extends JControllerLegacy
 
             $query = $this->_db->getQuery(true);
             $query->select('* from crg_ggif_view_alert_unita_edizioni');
-            $query->where('id_categoria_alert=' . $tipo);
+            $query->where('id_categoria_alert=' . $tipo. ' and pubblicato=1');
             $this->_db->setQuery($query);
             $item = $this->_db->loadObjectlist();
             if (count($item) > 0) {
@@ -88,7 +88,7 @@ class gginterfaceControllerAlertcarige extends JControllerLegacy
             $oggettomail = 'avviso scadenza corso: ';
             $testomail = " ricevi questa mail per l'approssimarsi della scadenza del corso in oggetto, che non hai ancora completato. Ti invitiamo a completare lo stesso al fine di raggiungere i tuoi obiettivi formativi";
             $result = $this->getUtentiInScadenzaCorso($corso);
-            $i = 0;
+
             if ($result['rows'] != null) {
 
 
@@ -107,11 +107,15 @@ class gginterfaceControllerAlertcarige extends JControllerLegacy
                     $mailer->addRecipient($to);
                     $mailer->setSubject($oggettomail . " " . $corso->titolo);
                     $mailer->setBody('Gentile ' . $row->cognome . " " . $testomail);
-                    if ($i > 5)
-                        break;
+
+                    //
+                    //
                     //$send = $mailer->Send();
+                    //
+                    //
+
                     DEBUGG::log('corso:' . $result['titolo'] . ' a:' . json_decode($row->fields)->email . ' cognome:' . $row->cognome, 'INVIO MAIL', 0, 1, 0);
-                    $i++;
+
                 }
 
             }
