@@ -30,6 +30,10 @@ class gginterfaceControllerAlertcarige extends JControllerLegacy
         $this->_db = JFactory::getDbo();
     }
 
+    public function start(){
+
+        $this->sendAlertScadenzaCorsi();
+    }
 
     public function sendAlertScadenzaCorsi(){
 
@@ -38,26 +42,23 @@ class gginterfaceControllerAlertcarige extends JControllerLegacy
             $corsi_primo_tipo = $this->elencoCorsiPerTipoScadenza(1);//prende soltanto i corsi del tipo 1, ovvero esma - ivass - etc
 
             foreach ($corsi_primo_tipo as $corso) {
+                if ($corso->daysfromdata_fine< 14 || $corso->daysfromlastalert > 14 || $corso->daysfromlastalert==null) {
 
-                $intervaldafinecorso = date_diff(date(), $corso->data_fine);
-                $intervaldalastalert = date_diff(date(), $corso->lastalert);
-                if ($intervaldafinecorso < 14 || $intervaldalastalert > 14) {
+                    //echo 'PRIMO TIPO invio mail per :'.$corso->id.'<BR>';
                     $this->sendMail($corso);//VIENE MANDATA LA MAIL: SE IL CORSO SCADE TRA MENO DI 15 GIORNI O SE SONO PASSATI PIU' DI 15 DALL'INVIO
                 }
             }
 
             $corsi_secondo_tipo = $this->elencoCorsiPerTipoScadenza(2); //prende tutti gli altri
-            foreach ($corsi_secondo_tipo as $corso) {
+            foreach ($corsi_secondo_tipo as $corso_) {
 
-                $intervaldafinecorso = date_diff(date(), $corso->data_fine);
-                $intervaldalastalert = date_diff(date(), $corso->lastalert);
-                if (($intervaldafinecorso < 30 && $intervaldalastalert > 6) || $intervaldalastalert > 30) {
-                    $this->sendMail($corso);//VIENE MANDATA LA MAIL: SE IL CORSO SCADE TRA MENO DI 30 GIORNI E SE SONO PASSATI PIU' DI 6 DALL'INVIO; OPPURE NE SONO PASSATI PIU' 30 COMUNQUE
+                if (($corso_->daysfromdata_fine < 30 && $corso_->daysfromlastalert > 6) || ($corso_->daysfromlastalert > 30 || $corso_->daysfromlastalert==null)) {
+                    //echo 'SECONDO TIPO invio mail per :'.$corso_->id.'<BR>';
+                    $this->sendMail($corso_);//VIENE MANDATA LA MAIL: SE IL CORSO SCADE TRA MENO DI 30 GIORNI E SE SONO PASSATI PIU' DI 6 DALL'INVIO; OPPURE NE SONO PASSATI PIU' 30 COMUNQUE
                 }
             }
         }catch (Exception $ex){
             DEBUGG::log($ex->getMessage(), 'ERRORE SEND_ALERT_SCADENZA_CORSI', 0, 1, 0);
-
         }
     }
 
@@ -91,11 +92,11 @@ class gginterfaceControllerAlertcarige extends JControllerLegacy
 
             if ($result['rows'] != null) {
 
-
+                $i=0;
                 foreach ($result['rows'] as $row) {
 
                     //$to = $row->email;
-                    $to = ['a.petruzzella71@gmail.com'];
+                    $to = 'a.petruzzella71@gmail.com';
                     $mailer = JFactory::getMailer();
                     $config = JFactory::getConfig();
                     $sender = array(
@@ -110,17 +111,21 @@ class gginterfaceControllerAlertcarige extends JControllerLegacy
 
                     //
                     //
-                    //$send = $mailer->Send();
+                    if($i<4) {
+                        //echo $to;
+                        //$send = $mailer->Send();
+                    }
                     //
                     //
 
-                    DEBUGG::log('corso:' . $result['titolo'] . ' a:' . json_decode($row->fields)->email . ' cognome:' . $row->cognome, 'INVIO MAIL', 0, 1, 0);
-
+                    //DEBUGG::log('corso:' . $result['titolo'] . ' a:' . json_decode($row->fields)->email . ' cognome:' . $row->cognome, 'INVIO MAIL', 0, 1, 0);
+                    $i++;
                 }
 
             }
 
             $this->updateLastmail($corso);
+            DEBUGG::log('corso:' . $corso->titolo , 'INVIO MAIL', 0, 1, 0);
         }catch (Exception $ex){
             DEBUGG::log($ex->getMessage(), 'ERRORE INVIO MAIL', 0, 1, 0);
 
@@ -151,13 +156,17 @@ class gginterfaceControllerAlertcarige extends JControllerLegacy
 
                         break;
                     case 'gruppo':
+
                         $query = $db->getQuery(true);
-                        $query->select('anagrafica.*');
+                        //$query->select('anagrafica.*');
+                        $query->select('anagrafica.cognome,(select percentuale_completamento from crg_gg_view_carige_learning_batch where id_user=anagrafica.id_user and id_corso='.$corso->id.') as completamento');
                         $query->from('#__gg_report_users as anagrafica');
                         $query->join('inner', '#__user_usergroup_map as um on anagrafica.id_user=um.user_id');
                         $query->join('inner', '#__gg_usergroup_map as m on m.idgruppo=um.group_id');
                         $query->where('m.idunita=' . $corso->id . ' and anagrafica.id not in ( select id_anagrafica from #__gg_view_stato_user_corso where id_corso=' . $corso->id . ' and stato=1)');
 
+
+                        //echo $query.'<br>';
                         $db->setQuery($query);
 
                         $result['rows'] = $db->loadObjectList();
