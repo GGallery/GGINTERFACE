@@ -32,7 +32,8 @@ class gginterfaceControllerAlertcarige extends JControllerLegacy
 
     public function start(){
 
-        $this->sendAlertScadenzaCorsi();
+        //$this->sendAlertScadenzaCorsi();
+        $this->sendCruscrotto();
     }
 
     public function sendAlertScadenzaCorsi(){
@@ -194,4 +195,160 @@ class gginterfaceControllerAlertcarige extends JControllerLegacy
 
     }
 
+    private function sendCruscrotto(){
+
+
+        $db = JFactory::getDbo();
+        $query = $db->getQuery(true);
+        $query->select('*');
+        $query->from('#__gg_report_users');
+        $db->setQuery($query);
+        $users=$db->loadObjectList();
+        $i=0;
+        foreach ($users as $user){
+            if ($i<5) {
+                $userid = $user->id_user;
+                if ($this->utente_abilitato($userid)) {
+
+                    if ($this->utente_abilitato_esma($userid)) {
+                        $tot_esma = 30;
+                        $ore_esma = $this->ore_esma($userid);
+                        $percentuale_ore_esma = ($ore_esma / $tot_esma) * 100;
+                        $display_state_esma = null;
+                    }
+                    $ore_ivass = $this->ore_ivass($userid);
+                    $scadenza_ivass = $this->scadenza_ivass($userid);
+                    $tot_ivass = $this->totale_ivass($userid);
+                    $this->sendMailCruscotto($ore_esma, $ore_ivass, $tot_ivass, $scadenza_ivass, $user);
+                }
+                $i++;
+            }
+        }
+
+
+
+    }
+
+    private function sendMailCruscotto($ore_esma, $ore_ivass, $tot_ivass, $scadenza_ivass,$user){
+
+        try {
+            $oggettomail = 'situazione cruscotto formativo Carigelearning';
+            //$to = json_decode($user->fields)->email;
+            $testomail=' hai totalizzato '.$ore_esma.' su 30 ore, scadenza 31/12/2018 e '.$ore_ivass.' su '.$tot_ivass.' scadenza '.$scadenza_ivass;
+            $to = 'a.petruzzella71@gmail.com';
+            $mailer = JFactory::getMailer();
+            $config = JFactory::getConfig();
+            $sender = array(
+                $config->get('mailfrom'),
+                $config->get('fromname')
+            );
+            $mailer->setSender($sender);
+            $mailer->addRecipient($to);
+            $mailer->setSubject($oggettomail);
+            $mailer->setBody('Gentile ' . $user->cognome . " " . $testomail);
+            echo 'Gentile ' . $user->cognome . " " . $testomail;
+            $send = $mailer->Send();
+            //DEBUGG::log('STATO CRUSCOTTO ' .$user->cognome . " " . $testomail , 'INVIO MAIL', 0, 1, 0);
+        }catch (Exception $ex){
+            DEBUGG::log($ex->getMessage(), 'ERRORE INVIO MAIL', 0, 1, 0);
+
+        }
+    }
+
+    private function utente_abilitato($userid)
+    {
+
+        try {
+            $db = JFactory::getDbo();
+            $query = "select count(*) from cc_crg_ggif_utenti_non_abilitati_contatori where id_utente=" . $userid;
+            $db->setQuery($query);
+
+
+            if ($db->loadResult() == 0) {
+
+                return true;
+            } else {
+
+                return false;
+            }
+        }catch (Exception $e){
+
+            echo $e->getMessage();
+        }
+    }
+
+    private function utente_abilitato_esma($userid)
+    {
+
+        $db = JFactory::getDbo();
+        $query = "select count(*) from cc_crg_ggif_utenti_non_abilitati_esma where id_utente=". $userid;
+        $db->setQuery($query);
+
+
+        if ($db->loadResult() == 0) {
+
+            return true;
+        } else {
+
+            return false;
+        }
+
+    }
+
+    private function ore_esma($userid)
+    {
+        $db = JFactory::getDbo();
+        //$contenuti_esma=getContenutiTema(1);
+
+        //$corsi_esma=getCorsiTema(1);
+        $query = "select sum(durata)/3600 from crg_gg_report as r INNER JOIN crg_gg_contenuti as c on r.id_contenuto=c.id inner join crg_ggif_edizione_unita_gruppo as e on e.id_unita=r.id_corso 
+              where r.stato=1 and e.id_tema like '%1%' and r.id_utente=".$userid;
+        // echo $query;
+        $db->setQuery($query);
+        $ore_fad=$db->loadResult();
+
+        $query = "select sum(res.ore) from cc_crg_ggif_logres as res where id_utente=" . $userid . " and res.id_tema=1";
+        // echo $query;
+        $db->setQuery($query);
+        $ore_res=$db->loadResult();
+        //echo 'ore_fad_esma:'.$ore_fad.'ore_esma_res:'.$ore_res;
+        return $ore_fad+$ore_res;
+    }
+
+    private function ore_ivass($userid){
+        $db = JFactory::getDbo();
+        //$contenuti_ivass=getContenutiTema(2);
+        //$corsi_ivass=getCorsiTema(2);
+        $query = "select sum(durata)/3600 from crg_gg_report as r INNER JOIN crg_gg_contenuti as c on r.id_contenuto=c.id inner join crg_ggif_edizione_unita_gruppo as e on e.id_unita=r.id_corso 
+              where r.stato=1 and e.id_tema like '%2%' and r.id_utente=".$userid;
+        $db->setQuery($query);
+        $ore_fad=$db->loadResult();
+
+        $query="select sum(res.ore) from cc_crg_ggif_logres as res where id_utente=".$userid." and res.id_tema=2";
+        $db->setQuery($query);
+        $ore_res=$db->loadResult();
+        //echo 'ore_fad_ivass:'.$ore_fad.'ore_res_ivass:'.$ore_res;
+        return $ore_res+$ore_fad;
+    }
+
+    private function scadenza_ivass($userid){
+
+        $db = JFactory::getDbo();
+        $query="select temabiennio from cc_crg_ggif_scadenza_temabiennio where id = (select id_scadenza_temabiennio from cc_crg_ggif_corrispondenza_utente_ivass where id_utente=".$userid.")";
+        $db->setQuery($query);
+
+        return $db->loadResult();
+    }
+
+    private function totale_ivass($userid){
+
+        $db = JFactory::getDbo();
+        $query="select ore from cc_crg_ggif_corrispondenza_utente_ivass where id_utente=".$userid;
+
+        $db->setQuery($query);
+        return $db->loadResult();
+
+    }
+
 }
+
