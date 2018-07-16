@@ -18,7 +18,7 @@ jimport('joomla.application.component.view');
 //jimport('joomla.application.component.helper');
 
 
-class gginterfaceViewNewEdizioneMailAlert extends JViewLegacy {
+class gginterfaceViewNewedizionemailalert extends JViewLegacy {
 
 
     function display($tpl = null)
@@ -32,11 +32,7 @@ class gginterfaceViewNewEdizioneMailAlert extends JViewLegacy {
         JHtml::_('bootstrap.framework');
         JHtml::_('jquery.ui', array('core', 'sortable'));
         $document = JFactory::getDocument();
-        JToolBarHelper::title("Caricamento Attestati Residenziali ", 'gginterface');
-        $document->addStyleSheet($host . 'administrator/components/com_gginterface/jupload/css/jquery.fileupload.css');
-        $document->addStyleSheet($host . 'administrator/components/com_gginterface/jupload/css/jquery.fileupload-ui.css');
-        $document->addScript($host . 'administrator/components/com_gginterface/jupload/js/jquery.fileupload.js');
-        $document->addScript($host . 'administrator/components/com_gginterface/jupload/js/procedure.js');
+        JToolBarHelper::title("Invio mail ", 'gginterface');
 
         parent::display();
     }

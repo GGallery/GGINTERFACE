@@ -64,7 +64,7 @@ class JFormFieldlistaalberounita extends JFormFieldList {
         foreach ($tmptree as $item) {
             array_push($tree, $item);
             foreach ($this->getUnitTree($item->value) as $item2) {
-                $item2->text = "─" . $item2->text;
+                $item2->text = "-" . $item2->text;
                 array_push($tree, $item2);
             }
         }

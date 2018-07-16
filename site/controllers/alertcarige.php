@@ -36,7 +36,94 @@ class gginterfaceControllerAlertcarige extends JControllerLegacy
         $this->sendCruscrotto();
     }
 
-    public function sendAlertScadenzaCorsi(){
+    public function sendNewEdizioneMailAlert(){
+
+        try {
+        $id_corso=JRequest::getVar("id_corso");
+        $testomail=JRequest::getVar("testo_mail");
+        $oggettomail = 'avviso partenza nuovo corso';
+        $result = $this->getUtentiNuovaEdizione($id_corso);
+        $i=0;
+        //echo "elenco dei destinatari:<br>";
+        foreach ($result as $row){
+
+            //echo $email->email.'<br>';
+
+            //$to = $row->email;
+            $to = 'a.petruzzella71@gmail.com';
+            $mailer = JFactory::getMailer();
+            $config = JFactory::getConfig();
+            $sender = array(
+                $config->get('mailfrom'),
+                $config->get('fromname')
+            );
+
+            $mailer->setSender($sender);
+            $mailer->addRecipient($to);
+            $mailer->setSubject($oggettomail);
+            $mailer->setBody('Gentile ' . $row->name . " " . $testomail);
+
+            //
+            //
+            if($i<4) {
+                //echo $row->email.'<br>';
+                //echo $testomail;
+                //$send = $mailer->Send();
+                //echo $send.'<br>';
+
+            }
+            //
+            //
+
+            //DEBUGG::log('corso:' . $result['titolo'] . ' a:' . json_decode($row->fields)->email . ' cognome:' . $row->cognome, 'INVIO MAIL', 0, 1, 0);
+            $i++;
+
+        }
+//            JFactory::getApplication()->enqueueMessage(JText::_('MAIL OK'));
+         //$this->setRedirect('administrator/index.php?option=com_gginterface&view=newedizionemailalert&extension=com_gginterface', JFactory::getApplication()->enqueueMessage(JText::_('MAIL OK')));
+            echo 'true';
+            $this->_japp->close();
+
+        }catch (Exception $ex){
+            DEBUGG::log($ex->getMessage(), 'ERRORE INVIO MAIL NUOVA EDIZIONE', 0, 1, 0);
+
+            echo $ex->getMessage();
+            ///$this->setRedirect('administrator/index.php?option=com_gginterface&view=newedizionemailalert',JFactory::getApplication()->enqueueMessage(JText::_('SOME_ERROR_OCCURRED'), 'error'));
+
+
+        }
+
+    }
+
+    private function getUtentiNuovaEdizione($id_corso){
+
+        $db = JFactory::getDbo();
+
+        try {
+
+            if($id_corso) {
+
+                $query = $db->getQuery(true);
+                $query->select('crg_users.email,crg_users.name');
+                $query->from('crg_users');
+                $query->join('inner','crg_user_usergroup_map ON crg_user_usergroup_map.user_id = crg_users.id');
+                $query->join('inner','crg_gg_usergroup_map ON crg_user_usergroup_map.group_id = crg_gg_usergroup_map.idgruppo');
+                $query->where(' crg_gg_usergroup_map.idunita ='.$id_corso);
+                $db->setQuery($query);
+                $result= $db->loadObjectList();
+                return $result;
+
+            }
+        }catch (Exception $ex){
+            DEBUGG::log($ex->getMessage(), 'ERRORE GET UTENTI SCADENZA CORSI', 0, 1, 0);
+
+        }
+
+
+
+    }
+
+    private function sendAlertScadenzaCorsi(){
 
         try {
 
@@ -63,7 +150,7 @@ class gginterfaceControllerAlertcarige extends JControllerLegacy
         }
     }
 
-    public function elencoCorsiPerTipoScadenza($tipo){
+    private function elencoCorsiPerTipoScadenza($tipo){
 
         try {
 

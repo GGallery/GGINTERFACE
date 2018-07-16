@@ -2,20 +2,23 @@
 <form addrulepath="/administrator/components/gginterface/models/rules">
 
 	<fieldset addfieldpath="/administrator/components/gginterface/models/fields" >
-
-
-
 		<field
 				name="categoria"
 				type="listaalberounita"
 				class="inputbox"
 				default=""
-				label=""
+				label="scegli il nuovo corso per il quale inviare la mail"
 				description=""
 				required=""
-
-
-
+		/>
+		<field
+				name="alert_mail_text"
+				class="inputbox"
+				label="testo della mail di avviso"
+				type="textarea"
+				cols="45"
+				rows="10"
+				default="ATTENZIONE: SELEZIONA UN NUOVO CORSO"
 		/>
 	</fieldset>
 </form>
