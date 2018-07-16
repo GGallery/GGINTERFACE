@@ -36,6 +36,85 @@ class gginterfaceControllerAlertcarige extends JControllerLegacy
         $this->sendCruscrotto();
     }
 
+    private function sendMail($oggettomail,$testomail,$to,$cognome){
+
+        //$to = $row->email;
+        $to = 'a.petruzzella71@gmail.com';
+        $mailer = JFactory::getMailer();
+        $config = JFactory::getConfig();
+        $sender = array(
+            $config->get('mailfrom'),
+            $config->get('fromname')
+        );
+        $mailer->setSender($sender);
+        $mailer->addRecipient($to);
+        $mailer->setSubject($oggettomail);
+        $mailer->setBody('Gentile ' . $cognome . " " . $testomail);
+        //$send = $mailer->Send();
+
+    }
+    public function sendAlertScadenzaCorsi(){
+
+        try {
+
+            $corsi_primo_tipo = $this->elencoCorsiPerTipoScadenza(1);//prende soltanto i corsi del tipo 1, ovvero esma - ivass - etc
+
+            foreach ($corsi_primo_tipo as $corso) {
+                if ($corso->daysfromdata_fine< 14 || $corso->daysfromlastalert > 14 || $corso->daysfromlastalert==null) {
+
+                    //echo 'PRIMO TIPO invio mail per :'.$corso->id.'<BR>';
+                    $this->sendMailAlertScadenzaCorsi($corso);//VIENE MANDATA LA MAIL: SE IL CORSO SCADE TRA MENO DI 15 GIORNI O SE SONO PASSATI PIU' DI 15 DALL'INVIO
+                }
+            }
+
+            $corsi_secondo_tipo = $this->elencoCorsiPerTipoScadenza(2); //prende tutti gli altri
+            foreach ($corsi_secondo_tipo as $corso_) {
+
+                if (($corso_->daysfromdata_fine < 30 && $corso_->daysfromlastalert > 6) || ($corso_->daysfromlastalert > 30 || $corso_->daysfromlastalert==null)) {
+                    //echo 'SECONDO TIPO invio mail per :'.$corso_->id.'<BR>';
+                    $this->sendMailAlertScadenzaCorsi($corso_);//VIENE MANDATA LA MAIL: SE IL CORSO SCADE TRA MENO DI 30 GIORNI E SE SONO PASSATI PIU' DI 6 DALL'INVIO; OPPURE NE SONO PASSATI PIU' 30 COMUNQUE
+                }
+            }
+        }catch (Exception $ex){
+            DEBUGG::log($ex->getMessage(), 'ERRORE SEND_ALERT_SCADENZA_CORSI', 0, 1, 0);
+        }
+    }
+
+    public function sendCruscrotto(){
+
+
+        $db = JFactory::getDbo();
+        $query = $db->getQuery(true);
+        $query->select('*');
+        $query->from('#__gg_report_users');
+        $db->setQuery($query);
+        $users=$db->loadObjectList();
+        $i=0;
+        foreach ($users as $user){
+            if ($i<5) {
+                $userid = $user->id_user;
+                if ($this->utente_abilitato($userid)) {
+
+                    if ($this->utente_abilitato_esma($userid)) {
+                        $tot_esma = 30;
+                        $ore_esma = $this->ore_esma($userid);
+                        $percentuale_ore_esma = ($ore_esma / $tot_esma) * 100;
+                        $display_state_esma = null;
+                    }
+                    $ore_ivass = $this->ore_ivass($userid);
+                    $scadenza_ivass = $this->scadenza_ivass($userid);
+                    $tot_ivass = $this->totale_ivass($userid);
+                    $oggettomail = 'situazione cruscotto formativo Carigelearning';
+                    $to = json_decode($user->fields)->email;
+                    $testomail=' hai totalizzato '.$ore_esma.' su 30 ore, scadenza 31/12/2018 e '.$ore_ivass.' su '.$tot_ivass.' scadenza '.$scadenza_ivass;
+                    $this->sendMail($oggettomail,$testomail,$to,$user->cognome);
+                }
+
+            }
+            $i++;
+        }
+    }
+
     public function sendNewEdizioneMailAlert(){
 
         try {
@@ -46,38 +125,11 @@ class gginterfaceControllerAlertcarige extends JControllerLegacy
         $i=0;
         //echo "elenco dei destinatari:<br>";
         foreach ($result as $row){
-
-            //echo $email->email.'<br>';
-
-            //$to = $row->email;
-            $to = 'a.petruzzella71@gmail.com';
-            $mailer = JFactory::getMailer();
-            $config = JFactory::getConfig();
-            $sender = array(
-                $config->get('mailfrom'),
-                $config->get('fromname')
-            );
-
-            $mailer->setSender($sender);
-            $mailer->addRecipient($to);
-            $mailer->setSubject($oggettomail);
-            $mailer->setBody('Gentile ' . $row->name . " " . $testomail);
-
-            //
-            //
+            $to = json_decode($row->fields)->email;
             if($i<4) {
-                //echo $row->email.'<br>';
-                //echo $testomail;
-                //$send = $mailer->Send();
-                //echo $send.'<br>';
-
+                $this->sendMail($oggettomail,$testomail,$to,$row->cognome);
             }
-            //
-            //
-
-            //DEBUGG::log('corso:' . $result['titolo'] . ' a:' . json_decode($row->fields)->email . ' cognome:' . $row->cognome, 'INVIO MAIL', 0, 1, 0);
             $i++;
-
         }
 //            JFactory::getApplication()->enqueueMessage(JText::_('MAIL OK'));
          //$this->setRedirect('administrator/index.php?option=com_gginterface&view=newedizionemailalert&extension=com_gginterface', JFactory::getApplication()->enqueueMessage(JText::_('MAIL OK')));
@@ -89,10 +141,7 @@ class gginterfaceControllerAlertcarige extends JControllerLegacy
 
             echo $ex->getMessage();
             ///$this->setRedirect('administrator/index.php?option=com_gginterface&view=newedizionemailalert',JFactory::getApplication()->enqueueMessage(JText::_('SOME_ERROR_OCCURRED'), 'error'));
-
-
         }
-
     }
 
     private function getUtentiNuovaEdizione($id_corso){
@@ -104,9 +153,9 @@ class gginterfaceControllerAlertcarige extends JControllerLegacy
             if($id_corso) {
 
                 $query = $db->getQuery(true);
-                $query->select('crg_users.email,crg_users.name');
-                $query->from('crg_users');
-                $query->join('inner','crg_user_usergroup_map ON crg_user_usergroup_map.user_id = crg_users.id');
+                $query->select('anagrafica.*');
+                $query->from('crg_gg_report_users as anagrafica');
+                $query->join('inner','crg_user_usergroup_map ON  crg_user_usergroup_map.user_id = anagrafica.id_user');
                 $query->join('inner','crg_gg_usergroup_map ON crg_user_usergroup_map.group_id = crg_gg_usergroup_map.idgruppo');
                 $query->where(' crg_gg_usergroup_map.idunita ='.$id_corso);
                 $db->setQuery($query);
@@ -121,33 +170,6 @@ class gginterfaceControllerAlertcarige extends JControllerLegacy
 
 
 
-    }
-
-    private function sendAlertScadenzaCorsi(){
-
-        try {
-
-            $corsi_primo_tipo = $this->elencoCorsiPerTipoScadenza(1);//prende soltanto i corsi del tipo 1, ovvero esma - ivass - etc
-
-            foreach ($corsi_primo_tipo as $corso) {
-                if ($corso->daysfromdata_fine< 14 || $corso->daysfromlastalert > 14 || $corso->daysfromlastalert==null) {
-
-                    //echo 'PRIMO TIPO invio mail per :'.$corso->id.'<BR>';
-                    $this->sendMail($corso);//VIENE MANDATA LA MAIL: SE IL CORSO SCADE TRA MENO DI 15 GIORNI O SE SONO PASSATI PIU' DI 15 DALL'INVIO
-                }
-            }
-
-            $corsi_secondo_tipo = $this->elencoCorsiPerTipoScadenza(2); //prende tutti gli altri
-            foreach ($corsi_secondo_tipo as $corso_) {
-
-                if (($corso_->daysfromdata_fine < 30 && $corso_->daysfromlastalert > 6) || ($corso_->daysfromlastalert > 30 || $corso_->daysfromlastalert==null)) {
-                    //echo 'SECONDO TIPO invio mail per :'.$corso_->id.'<BR>';
-                    $this->sendMail($corso_);//VIENE MANDATA LA MAIL: SE IL CORSO SCADE TRA MENO DI 30 GIORNI E SE SONO PASSATI PIU' DI 6 DALL'INVIO; OPPURE NE SONO PASSATI PIU' 30 COMUNQUE
-                }
-            }
-        }catch (Exception $ex){
-            DEBUGG::log($ex->getMessage(), 'ERRORE SEND_ALERT_SCADENZA_CORSI', 0, 1, 0);
-        }
     }
 
     private function elencoCorsiPerTipoScadenza($tipo){
@@ -169,56 +191,6 @@ class gginterfaceControllerAlertcarige extends JControllerLegacy
             DEBUGG::log($ex->getMessage(), 'ERRORE ELENCO_CORSI_PER_TIPO_SCADENZA', 0, 1, 0);
 
         }
-    }
-
-    private function sendMail($corso){
-
-        try {
-            $oggettomail = 'avviso scadenza corso: ';
-            $testomail = " ricevi questa mail per l'approssimarsi della scadenza del corso in oggetto, che non hai ancora completato. Ti invitiamo a completare lo stesso al fine di raggiungere i tuoi obiettivi formativi";
-            $result = $this->getUtentiInScadenzaCorso($corso);
-
-            if ($result['rows'] != null) {
-
-                $i=0;
-                foreach ($result['rows'] as $row) {
-
-                    //$to = $row->email;
-                    $to = 'a.petruzzella71@gmail.com';
-                    $mailer = JFactory::getMailer();
-                    $config = JFactory::getConfig();
-                    $sender = array(
-                        $config->get('mailfrom'),
-                        $config->get('fromname')
-                    );
-
-                    $mailer->setSender($sender);
-                    $mailer->addRecipient($to);
-                    $mailer->setSubject($oggettomail . " " . $corso->titolo);
-                    $mailer->setBody('Gentile ' . $row->cognome . " " . $testomail);
-
-                    //
-                    //
-                    if($i<4) {
-                        //echo $to;
-                        //$send = $mailer->Send();
-                    }
-                    //
-                    //
-
-                    //DEBUGG::log('corso:' . $result['titolo'] . ' a:' . json_decode($row->fields)->email . ' cognome:' . $row->cognome, 'INVIO MAIL', 0, 1, 0);
-                    $i++;
-                }
-
-            }
-
-            $this->updateLastmail($corso);
-            DEBUGG::log('corso:' . $corso->titolo , 'INVIO MAIL', 0, 1, 0);
-        }catch (Exception $ex){
-            DEBUGG::log($ex->getMessage(), 'ERRORE INVIO MAIL', 0, 1, 0);
-
-        }
-
     }
 
     private function getUtentiInScadenzaCorso($corso){
@@ -282,63 +254,26 @@ class gginterfaceControllerAlertcarige extends JControllerLegacy
 
     }
 
-    private function sendCruscrotto(){
-
-
-        $db = JFactory::getDbo();
-        $query = $db->getQuery(true);
-        $query->select('*');
-        $query->from('#__gg_report_users');
-        $db->setQuery($query);
-        $users=$db->loadObjectList();
-        $i=0;
-        foreach ($users as $user){
-            if ($i<5) {
-                $userid = $user->id_user;
-                if ($this->utente_abilitato($userid)) {
-
-                    if ($this->utente_abilitato_esma($userid)) {
-                        $tot_esma = 30;
-                        $ore_esma = $this->ore_esma($userid);
-                        $percentuale_ore_esma = ($ore_esma / $tot_esma) * 100;
-                        $display_state_esma = null;
-                    }
-                    $ore_ivass = $this->ore_ivass($userid);
-                    $scadenza_ivass = $this->scadenza_ivass($userid);
-                    $tot_ivass = $this->totale_ivass($userid);
-                    $this->sendMailCruscotto($ore_esma, $ore_ivass, $tot_ivass, $scadenza_ivass, $user);
-                }
-                $i++;
-            }
-        }
-
-
-
-    }
-
-    private function sendMailCruscotto($ore_esma, $ore_ivass, $tot_ivass, $scadenza_ivass,$user){
+    private function sendMailAlertScadenzaCorsi($corso){
 
         try {
-            $oggettomail = 'situazione cruscotto formativo Carigelearning';
-            //$to = json_decode($user->fields)->email;
-            $testomail=' hai totalizzato '.$ore_esma.' su 30 ore, scadenza 31/12/2018 e '.$ore_ivass.' su '.$tot_ivass.' scadenza '.$scadenza_ivass;
-            $to = 'a.petruzzella71@gmail.com';
-            $mailer = JFactory::getMailer();
-            $config = JFactory::getConfig();
-            $sender = array(
-                $config->get('mailfrom'),
-                $config->get('fromname')
-            );
-            $mailer->setSender($sender);
-            $mailer->addRecipient($to);
-            $mailer->setSubject($oggettomail);
-            $mailer->setBody('Gentile ' . $user->cognome . " " . $testomail);
-            echo 'Gentile ' . $user->cognome . " " . $testomail;
-            $send = $mailer->Send();
-            //DEBUGG::log('STATO CRUSCOTTO ' .$user->cognome . " " . $testomail , 'INVIO MAIL', 0, 1, 0);
+            $oggettomail = 'avviso scadenza corso: ';
+            $testomail = " ricevi questa mail per l'approssimarsi della scadenza del corso in oggetto, che non hai ancora completato. Ti invitiamo a completare lo stesso al fine di raggiungere i tuoi obiettivi formativi";
+            $result = $this->getUtentiInScadenzaCorso($corso);
+            if ($result['rows'] != null) {
+                $i=0;
+                foreach ($result['rows'] as $row) {
+                    $to = json_decode($row->fields)->email;
+                    if($i<4) {
+                        $this->sendMail($oggettomail. " " . $corso->titolo,$testomail,$to,$row->cognome);
+                    }
+                       $i++;
+                }
+            }
+            $this->updateLastmail($corso);
+            DEBUGG::log('corso:' . $corso->titolo , 'INVIO MAIL', 0, 1, 0);
         }catch (Exception $ex){
             DEBUGG::log($ex->getMessage(), 'ERRORE INVIO MAIL', 0, 1, 0);
-
         }
     }
 
@@ -436,6 +371,14 @@ class gginterfaceControllerAlertcarige extends JControllerLegacy
         return $db->loadResult();
 
     }
+
+
+    private function sendMailCruscotto($ore_esma, $ore_ivass, $tot_ivass, $scadenza_ivass,$user){
+
+
+    }
+
+
 
 }
 

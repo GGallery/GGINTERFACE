@@ -57,15 +57,15 @@ function inviaMail() {
         jQuery.when(jQuery.get('../index.php?option=com_gginterface&task=Alertcarige.sendNewEdizioneMailAlert&id_corso='+id_corso_invio+'&testo_mail='+testo_invio))
 
             .done(function(data){
-
+                console.log(data);
                 if(data=='true'){
-                    console.log(data);
                     //Joomla.renderMessages({"success":["invio email avvenuto con successo!!"]});
                     alert ('invio avvenuto con successo, puoi procedere eventualmente con un altro invio');
+                }else{
+                    alert(data.toString());
                 }
-
             }).fail(function(data){
-
+                alert(data.toString());
         });
     }
 
