@@ -32,25 +32,29 @@ class gginterfaceControllerAlertcarige extends JControllerLegacy
 
     public function start(){
 
-        //$this->sendAlertScadenzaCorsi();
-        $this->sendCruscrotto();
+        $this->sendAlertScadenzaCorsi();
+        //$this->sendCruscrotto();
     }
 
     private function sendMail($oggettomail,$testomail,$to,$cognome){
 
-        //$to = $row->email;
-        $to = 'a.petruzzella71@gmail.com';
-        $mailer = JFactory::getMailer();
-        $config = JFactory::getConfig();
-        $sender = array(
-            $config->get('mailfrom'),
-            $config->get('fromname')
-        );
-        $mailer->setSender($sender);
-        $mailer->addRecipient($to);
-        $mailer->setSubject($oggettomail);
-        $mailer->setBody('Gentile ' . $cognome . " " . $testomail);
-        //$send = $mailer->Send();
+        try {
+            //$to = $row->email;
+            $to = 'a.petruzzella71@gmail.com';
+            $mailer = JFactory::getMailer();
+            $config = JFactory::getConfig();
+            $sender = array(
+                $config->get('mailfrom'),
+                $config->get('fromname')
+            );
+            $mailer->setSender($sender);
+            $mailer->addRecipient($to);
+            $mailer->setSubject($oggettomail);
+            $mailer->setBody('Gentile ' . $cognome . " " . $testomail);
+            $send = $mailer->Send();
+        }catch (Exception $ex){
+            DEBUGG::log($ex->getMessage(), 'ERRORE INVIO MAIL GENERALE', 0, 1, 0);
+        }
 
     }
     public function sendAlertScadenzaCorsi(){
@@ -82,16 +86,16 @@ class gginterfaceControllerAlertcarige extends JControllerLegacy
 
     public function sendCruscrotto(){
 
+        try {
+            $db = JFactory::getDbo();
+            $query = $db->getQuery(true);
+            $query->select('*');
+            $query->from('#__gg_report_users');
+            $db->setQuery($query);
+            $users = $db->loadObjectList();
+            $i = 0;
+            foreach ($users as $user) {
 
-        $db = JFactory::getDbo();
-        $query = $db->getQuery(true);
-        $query->select('*');
-        $query->from('#__gg_report_users');
-        $db->setQuery($query);
-        $users=$db->loadObjectList();
-        $i=0;
-        foreach ($users as $user){
-            if ($i<5) {
                 $userid = $user->id_user;
                 if ($this->utente_abilitato($userid)) {
 
@@ -106,33 +110,38 @@ class gginterfaceControllerAlertcarige extends JControllerLegacy
                     $tot_ivass = $this->totale_ivass($userid);
                     $oggettomail = 'situazione cruscotto formativo Carigelearning';
                     $to = json_decode($user->fields)->email;
-                    $testomail=' hai totalizzato '.$ore_esma.' su 30 ore, scadenza 31/12/2018 e '.$ore_ivass.' su '.$tot_ivass.' scadenza '.$scadenza_ivass;
-                    $this->sendMail($oggettomail,$testomail,$to,$user->cognome);
+                    $testomail = ' hai totalizzato ' . $ore_esma . ' su 30 ore, scadenza 31/12/2018 e ' . $ore_ivass . ' su ' . $tot_ivass . ' scadenza ' . $scadenza_ivass;
+                    if ($i < 8) {
+                        $this->sendMail($oggettomail, $testomail, $to, $user->cognome);
+                    }
                 }
 
+
+                $i++;
             }
-            $i++;
+        }catch (Exception $ex){
+            DEBUGG::log($ex->getMessage(), 'ERRORE INVIO MAIL CRUSCOTTO', 0, 1, 0);
         }
     }
 
     public function sendNewEdizioneMailAlert(){
 
         try {
-        $id_corso=JRequest::getVar("id_corso");
-        $testomail=JRequest::getVar("testo_mail");
-        $oggettomail = 'avviso partenza nuovo corso';
-        $result = $this->getUtentiNuovaEdizione($id_corso);
-        $i=0;
-        //echo "elenco dei destinatari:<br>";
-        foreach ($result as $row){
-            $to = json_decode($row->fields)->email;
-            if($i<4) {
-                $this->sendMail($oggettomail,$testomail,$to,$row->cognome);
+            $id_corso=JRequest::getVar("id_corso");
+            $testomail=JRequest::getVar("testo_mail");
+            $oggettomail = 'avviso partenza nuovo corso';
+            $result = $this->getUtentiNuovaEdizione($id_corso);
+            $i=0;
+            //echo "elenco dei destinatari:<br>";
+            foreach ($result as $row){
+                $to = json_decode($row->fields)->email;
+                if($i<1) {
+                    $this->sendMail($oggettomail,$testomail,$to,$row->cognome);
+                }
+                $i++;
             }
-            $i++;
-        }
 //            JFactory::getApplication()->enqueueMessage(JText::_('MAIL OK'));
-         //$this->setRedirect('administrator/index.php?option=com_gginterface&view=newedizionemailalert&extension=com_gginterface', JFactory::getApplication()->enqueueMessage(JText::_('MAIL OK')));
+            //$this->setRedirect('administrator/index.php?option=com_gginterface&view=newedizionemailalert&extension=com_gginterface', JFactory::getApplication()->enqueueMessage(JText::_('MAIL OK')));
             echo 'true';
             $this->_japp->close();
 
@@ -247,7 +256,7 @@ class gginterfaceControllerAlertcarige extends JControllerLegacy
     private function updateLastmail($corso){
 
         $db = JFactory::getDbo();
-        $query="UPDATE crg_ggif_edizione_unita_gruppo SET lastalert=now()";
+        $query="UPDATE crg_ggif_edizione_unita_gruppo SET lastalert=now() where id_unita=".$corso->id;
         $db->setQuery($query);
         $db->execute();
 
@@ -264,14 +273,14 @@ class gginterfaceControllerAlertcarige extends JControllerLegacy
                 $i=0;
                 foreach ($result['rows'] as $row) {
                     $to = json_decode($row->fields)->email;
-                    if($i<4) {
+                    if($i<1) {
                         $this->sendMail($oggettomail. " " . $corso->titolo,$testomail,$to,$row->cognome);
                     }
-                       $i++;
+                    $i++;
                 }
             }
             $this->updateLastmail($corso);
-            DEBUGG::log('corso:' . $corso->titolo , 'INVIO MAIL', 0, 1, 0);
+            DEBUGG::log('corso:' . $corso->titolo , 'ALERT SCADENZE INVIO MAIL', 0, 1, 0);
         }catch (Exception $ex){
             DEBUGG::log($ex->getMessage(), 'ERRORE INVIO MAIL', 0, 1, 0);
         }
@@ -371,14 +380,6 @@ class gginterfaceControllerAlertcarige extends JControllerLegacy
         return $db->loadResult();
 
     }
-
-
-    private function sendMailCruscotto($ore_esma, $ore_ivass, $tot_ivass, $scadenza_ivass,$user){
-
-
-    }
-
-
 
 }
 
