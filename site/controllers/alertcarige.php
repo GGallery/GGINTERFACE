@@ -96,21 +96,24 @@ class gginterfaceControllerAlertcarige extends JControllerLegacy
             $i = 0;
             foreach ($users as $user) {
 
+
                 $userid = $user->id_user;
+                $messaggioesma=null;
                 if ($this->utente_abilitato($userid)) {
 
                     if ($this->utente_abilitato_esma($userid)) {
                         $tot_esma = 30;
                         $ore_esma = $this->ore_esma($userid);
                         $percentuale_ore_esma = ($ore_esma / $tot_esma) * 100;
-                        $display_state_esma = null;
+                        $messaggioesma=' hai totalizzato ' . $ore_esma . ' ESMA su 30 ore, scadenza 31/12/2018';
+
                     }
                     $ore_ivass = $this->ore_ivass($userid);
                     $scadenza_ivass = $this->scadenza_ivass($userid);
                     $tot_ivass = $this->totale_ivass($userid);
                     $oggettomail = 'situazione cruscotto formativo Carigelearning';
                     $to = json_decode($user->fields)->email;
-                    $testomail = ' hai totalizzato ' . $ore_esma . ' su 30 ore, scadenza 31/12/2018 e ' . $ore_ivass . ' su ' . $tot_ivass . ' scadenza ' . $scadenza_ivass;
+                    $testomail =  $messaggioesma.' hai totalizzato '. $ore_ivass . ' su ' . $tot_ivass . ' scadenza ' . $scadenza_ivass;
                     if ($i < 8) {
                         $this->sendMail($oggettomail, $testomail, $to, $user->cognome);
                     }
