@@ -47,28 +47,28 @@ defined('_JEXEC') or die('Restricted access');
         jQuery('#jform_alert_mail_text').val(testo_invio);
     });
 
-function inviaMail() {
+    function inviaMail() {
 
 
-    var ok=confirm('Attenzione: stai inviando una mail di avviso a tutti gli appartenenti al gruppo collegato al nuovo corso.');
-    if(ok==true){
+        var ok=confirm('Attenzione: stai inviando una mail di avviso a tutti gli appartenenti al gruppo collegato al nuovo corso.');
+        if(ok==true){
 
 //        location.href='../index.php?option=com_gginterface&task=Alertcarige.sendNewEdizioneMailAlert&id_corso='+id_corso_invio+'&testo_mail='+testo_invio;
-        jQuery.when(jQuery.get('../index.php?option=com_gginterface&task=Alertcarige.sendNewEdizioneMailAlert&id_corso='+id_corso_invio+'&testo_mail='+testo_invio))
+            jQuery.when(jQuery.get('../index.php?option=com_gginterface&task=Alertcarige.sendNewEdizioneMailAlert&id_corso='+id_corso_invio+'&testo_mail='+document.getElementById('jform_alert_mail_text').value))
 
-            .done(function(data){
-                console.log(data);
-                if(data=='true'){
-                    //Joomla.renderMessages({"success":["invio email avvenuto con successo!!"]});
-                    alert ('invio avvenuto con successo, puoi procedere eventualmente con un altro invio');
-                }else{
-                    alert(data.toString());
-                }
-            }).fail(function(data){
+                .done(function(data){
+                    console.log(data);
+                    if(data=='true'){
+                        //Joomla.renderMessages({"success":["invio email avvenuto con successo!!"]});
+                        alert ('invio avvenuto con successo, puoi procedere eventualmente con un altro invio');
+                    }else{
+                        alert(data.toString());
+                    }
+                }).fail(function(data){
                 alert(data.toString());
-        });
-    }
+            });
+        }
 
-}
+    }
 
 </script>
