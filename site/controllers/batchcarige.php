@@ -469,7 +469,7 @@ class gginterfaceControllerBatchcarige extends JControllerLegacy
     }
 
     private function updateTimeConteggiabile($id, $time){
-        if(!$time)
+        if(!$time || $time < 0)
             $time=0;
 
         $query = "UPDATE #__gg_log SET permanenza_conteggiabile=$time WHERE id=$id";
