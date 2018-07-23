@@ -421,7 +421,7 @@ class gginterfaceControllerBatchcarige extends JControllerLegacy
 
         try {
             $query = $this->_db->getQuery(true);
-            $query->select(' DISTINCT l.id_contenuto, c.durata');
+            $query->select(' DISTINCT l.id_contenuto, l.id_utente');
             $query->from('#__gg_log as l');
             $query->join('inner', '#__gg_contenuti as c ON c.id = l.id_contenuto');
             $query->where('l.permanenza_conteggiabile IS NULL');
