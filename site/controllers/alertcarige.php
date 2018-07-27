@@ -43,10 +43,16 @@ class gginterfaceControllerAlertcarige extends JControllerLegacy
             $to = 'a.petruzzella71@gmail.com';
             $mailer = JFactory::getMailer();
             $config = JFactory::getConfig();
-            $sender = array(
+            /*$sender = array(
                 $config->get('mailfrom'),
                 $config->get('fromname')
+            );*/
+            $sender=array(
+                'cal@carige.it',
+                'CAL CARIGE'
             );
+            $mailer->isHtml(true);
+            $mailer->Encoding = 'base64';
             $mailer->setSender($sender);
             $mailer->addRecipient($to);
             $mailer->setSubject($oggettomail);
@@ -57,26 +63,35 @@ class gginterfaceControllerAlertcarige extends JControllerLegacy
         }
 
     }
-    public function sendAlertScadenzaCorsi(){
+    public function sendAlertScadenzaCorsi(){//DEVI MODIFICARE QUESTA PROCEDURA, DIVIDENDO I DUE IF IN 4 IN MODO DA POTER  MANDARE UN NUOVO PARAMENTRO ALLA sendMailAlertScadenzaCorsi
 
         try {
 
             $corsi_primo_tipo = $this->elencoCorsiPerTipoScadenza(1);//prende soltanto i corsi del tipo 1, ovvero esma - ivass - etc
 
             foreach ($corsi_primo_tipo as $corso) {
-                if ($corso->daysfromdata_fine< 14 || $corso->daysfromlastalert > 14 || $corso->daysfromlastalert==null) {
+                if ($corso->daysfromdata_fine<= 14) {
 
                     //echo 'PRIMO TIPO invio mail per :'.$corso->id.'<BR>';
-                    $this->sendMailAlertScadenzaCorsi($corso);//VIENE MANDATA LA MAIL: SE IL CORSO SCADE TRA MENO DI 15 GIORNI O SE SONO PASSATI PIU' DI 15 DALL'INVIO
+                    $this->sendMailAlertScadenzaCorsi($corso,1);//VIENE MANDATA LA MAIL: IL CORSO SCADE TRA MENO DI 15 GIORNI
+                }
+
+                if( $corso->daysfromlastalert > 14){
+                    $this->sendMailAlertScadenzaCorsi($corso,2);//VIENE MANDATA LA MAIL: SONO PASSATI PIU' DI 15 DALL'INVIO
                 }
             }
 
             $corsi_secondo_tipo = $this->elencoCorsiPerTipoScadenza(2); //prende tutti gli altri
             foreach ($corsi_secondo_tipo as $corso_) {
 
-                if (($corso_->daysfromdata_fine < 30 && $corso_->daysfromlastalert > 6) || ($corso_->daysfromlastalert > 30 || $corso_->daysfromlastalert==null)) {
+                if ($corso_->daysfromdata_fine <= 30 && $corso_->daysfromlastalert > 6){
                     //echo 'SECONDO TIPO invio mail per :'.$corso_->id.'<BR>';
-                    $this->sendMailAlertScadenzaCorsi($corso_);//VIENE MANDATA LA MAIL: SE IL CORSO SCADE TRA MENO DI 30 GIORNI E SE SONO PASSATI PIU' DI 6 DALL'INVIO; OPPURE NE SONO PASSATI PIU' 30 COMUNQUE
+                    $this->sendMailAlertScadenzaCorsi($corso_,3);//VIENE MANDATA LA MAIL: IL CORSO SCADE TRA MENO DI 30 GIORNI E SONO PASSATI PIU' DI 6 DALL'INVIO;
+                }
+
+                if($corso_->daysfromdata_fine > 30 && $corso_->daysfromlastalert > 30){//SONO PASSATI PIU' 30, IL CORSO SACDE TRA PIU' DI 30 GG
+
+                    $this->sendMailAlertScadenzaCorsi($corso_,4);
                 }
             }
         }catch (Exception $ex){
@@ -231,7 +246,7 @@ class gginterfaceControllerAlertcarige extends JControllerLegacy
 
                         $query = $db->getQuery(true);
                         //$query->select('anagrafica.*');
-                        $query->select('anagrafica.cognome,(select percentuale_completamento from crg_gg_view_carige_learning_batch where id_user=anagrafica.id_user and id_corso='.$corso->id.') as completamento');
+                        $query->select('*');
                         $query->from('#__gg_report_users as anagrafica');
                         $query->join('inner', '#__user_usergroup_map as um on anagrafica.id_user=um.user_id');
                         $query->join('inner', '#__gg_usergroup_map as m on m.idgruppo=um.group_id');
@@ -239,6 +254,7 @@ class gginterfaceControllerAlertcarige extends JControllerLegacy
 
 
                         //echo $query.'<br>';
+                        //die;
                         $db->setQuery($query);
 
                         $result['rows'] = $db->loadObjectList();
@@ -266,24 +282,39 @@ class gginterfaceControllerAlertcarige extends JControllerLegacy
 
     }
 
-    private function sendMailAlertScadenzaCorsi($corso){
+    private function sendMailAlertScadenzaCorsi($corso,$tipo){
 
         try {
-            $oggettomail = 'avviso scadenza corso: ';
-            $testomail = " ricevi questa mail per l'approssimarsi della scadenza del corso in oggetto, che non hai ancora completato. Ti invitiamo a completare lo stesso al fine di raggiungere i tuoi obiettivi formativi";
-            $result = $this->getUtentiInScadenzaCorso($corso);
-            if ($result['rows'] != null) {
+            $testimail=$this->getTestiMail($tipo);
+            $oggettomail = $testimail['oggetto'];
+            $testomail = $testimail['testo'];
+            $utentiscadenza = $this->getUtentiInScadenzaCorso($corso);
+            $utentiesclusimail=$this->getUtentiEsclusiMail(1);
+            $numeroutentiscadenza=count($utentiscadenza);
+            $numeroutentiesclusimail=0;
+            if ($utentiscadenza['rows'] != null) {
+                $utenteinscadenzaindex=0;
+                foreach ($utentiscadenza['rows'] as &$row) {
+                    foreach ($utentiesclusimail as $utenteescluso) {
+                        if ($utenteescluso->id_utente == $row->id_user) {
+                            unset($utentiscadenza['rows'] [$utenteinscadenzaindex]);
+                            $numeroutentiesclusimail++;
+                        }
+                    }
+                    $utenteinscadenzaindex++;
+                }
                 $i=0;
-                foreach ($result['rows'] as $row) {
+                foreach ($utentiscadenza['rows'] as &$row) {
                     $to = json_decode($row->fields)->email;
-                    if($i<1) {
-                        $this->sendMail($oggettomail. " " . $corso->titolo,$testomail,$to,$row->cognome);
+                    if ($i < 1) {
+                        $this->sendMail($oggettomail . " " . $corso->titolo, $testomail, $to, $row->cognome);
                     }
                     $i++;
+
                 }
             }
             $this->updateLastmail($corso);
-            DEBUGG::log('corso:' . $corso->titolo , 'ALERT SCADENZE INVIO MAIL', 0, 1, 0);
+            DEBUGG::log('corso:' . $corso->titolo , 'ALERT SCADENZE INVIO MAIL N° '.$numeroutentiscadenza.' tra questi esclusi N°:'.$numeroutentiesclusimail, 0, 1, 0);
         }catch (Exception $ex){
             DEBUGG::log($ex->getMessage(), 'ERRORE INVIO MAIL', 0, 1, 0);
         }
@@ -384,5 +415,47 @@ class gginterfaceControllerAlertcarige extends JControllerLegacy
 
     }
 
-}
+    private function getUtentiEsclusiMail($regola)
+    {
 
+        $utenti_blocco_mail=null;
+        $db = JFactory::getDbo();
+        switch ($regola){
+            case 1:
+                $query = $db->getQuery(true);
+                $query->select('id_utente');
+                $query->from('cc_crg_ggif_utenti_blocco_mail');
+                $db->setQuery($query);
+                $utenti_blocco_mail= $db->loadObjectList();
+                break;
+        }
+        return $utenti_blocco_mail;
+    }
+
+    private function getTestiMail($tipo){
+
+        switch ($tipo){
+
+            case 1:
+                $testimail['oggetto']='prova oggetto 1';
+                $testimail['testo']='prova <b>testo 1</b>';
+                return $testimail;
+                break;
+            case 2:
+                $testimail['oggetto']='prova oggetto 2';
+                $testimail['testo']='prova <b>testo 2</b>';
+                return $testimail;
+                break;
+            case 3:
+                $testimail['oggetto']='prova oggetto 3';
+                $testimail['testo']='prova <b>testo 3</b>';
+                return $testimail;
+                break;
+            case 4:
+                $testimail['oggetto']='prova oggetto 4';
+                $testimail['testo']='prova <b>testo 4</b>';
+                return $testimail;
+                break;
+        }
+    }
+}

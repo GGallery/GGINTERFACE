@@ -576,7 +576,7 @@ class gginterfaceControllerBatchcarige extends JControllerLegacy
                        if(data_primo_accesso=\'0000-00-00\',\'\',DATE_FORMAT(data_primo_accesso,\'%m/%d/%Y\')) as \'data primo accesso\', 
                        if(data_completamento_edizione=\'0000-00-00\',\'\',DATE_FORMAT(data_completamento_edizione,\'%m/%d/%Y\') )as \'data completamento edizione\',
                        if(data_ultimo_accesso=\'0000-00-00\',\'\',DATE_FORMAT(data_ultimo_accesso,\'%m/%d/%Y\')) as \'data ultimo accesso\', 
-                       floor(percentuale_completamento) as \'percentuale completamento\' ');
+                       truncate(percentuale_completamento,0) as \'percentuale completamento\' ');
         $query->from('crg_gg_view_carige_learning_batch as b inner join crg_ggif_edizione_unita_gruppo as e on b.id_corso=e.id_unita');
         $query->where('id_user<>652 and `timestamp`> CURRENT_DATE');;
 
