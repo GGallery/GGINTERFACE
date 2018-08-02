@@ -14,5 +14,5 @@ class ggInterfaceController extends JControllerLegacy
      * @var string
      * @since 12.2
      */
-    protected $default_view = 'uploadAttestato';
+    protected $default_view = 'uploadattestato';
 }

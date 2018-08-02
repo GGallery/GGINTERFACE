@@ -39,8 +39,9 @@ class gginterfaceControllerAlertcarige extends JControllerLegacy
     private function sendMail($oggettomail,$testomail,$to,$cognome){
 
         try {
-            //$to = $row->email;
-            $to = 'a.petruzzella71@gmail.com';
+            //$to = $row->email; SCOMMENTARE
+            //$to = ['a.petruzzella71@gmail.com','gabriele.neri@carige.it']; //COMMENTARE
+            $to = ['a.petruzzella71@gmail.com'];
             $mailer = JFactory::getMailer();
             $config = JFactory::getConfig();
             /*$sender = array(
@@ -55,8 +56,10 @@ class gginterfaceControllerAlertcarige extends JControllerLegacy
             $mailer->Encoding = 'base64';
             $mailer->setSender($sender);
             $mailer->addRecipient($to);
+
             $mailer->setSubject($oggettomail);
             $mailer->setBody('Gentile ' . $cognome . " " . $testomail);
+            //$mailer->setBody('$testomail);
             $send = $mailer->Send();
         }catch (Exception $ex){
             DEBUGG::log($ex->getMessage(), 'ERRORE INVIO MAIL GENERALE', 0, 1, 0);
@@ -70,13 +73,13 @@ class gginterfaceControllerAlertcarige extends JControllerLegacy
             $corsi_primo_tipo = $this->elencoCorsiPerTipoScadenza(1);//prende soltanto i corsi del tipo 1, ovvero esma - ivass - etc
 
             foreach ($corsi_primo_tipo as $corso) {
-                if ($corso->daysfromdata_fine<= 14) {
+                if ($corso->daysfromdata_fine< 15) {
 
                     //echo 'PRIMO TIPO invio mail per :'.$corso->id.'<BR>';
                     $this->sendMailAlertScadenzaCorsi($corso,1);//VIENE MANDATA LA MAIL: IL CORSO SCADE TRA MENO DI 15 GIORNI
                 }
 
-                if( $corso->daysfromlastalert > 14){
+                if($corso->daysfromdata_fine> 14 && $corso->daysfromlastalert > 14){
                     $this->sendMailAlertScadenzaCorsi($corso,2);//VIENE MANDATA LA MAIL: SONO PASSATI PIU' DI 15 DALL'INVIO
                 }
             }
@@ -89,7 +92,7 @@ class gginterfaceControllerAlertcarige extends JControllerLegacy
                     $this->sendMailAlertScadenzaCorsi($corso_,3);//VIENE MANDATA LA MAIL: IL CORSO SCADE TRA MENO DI 30 GIORNI E SONO PASSATI PIU' DI 6 DALL'INVIO;
                 }
 
-                if($corso_->daysfromdata_fine > 30 && $corso_->daysfromlastalert > 30){//SONO PASSATI PIU' 30, IL CORSO SACDE TRA PIU' DI 30 GG
+                if($corso_->daysfromdata_fine > 29 && $corso_->daysfromlastalert > 29){//SONO PASSATI PIU' 30, IL CORSO SACDE TRA PIU' DI 30 GG
 
                     $this->sendMailAlertScadenzaCorsi($corso_,4);
                 }
@@ -296,7 +299,7 @@ class gginterfaceControllerAlertcarige extends JControllerLegacy
             $utentiscadenza = $this->getUtentiInScadenzaCorso($corso);
             $utentiesclusimail=$this->getUtentiEsclusiMail(1);
 
-            $numeroutentiscadenza=count($utentiscadenza);
+
             $numeroutentiesclusimail=0;
             $numeroutentiesclusicruscotto=0;
             if ($utentiscadenza['rows'] != null) {
@@ -314,27 +317,35 @@ class gginterfaceControllerAlertcarige extends JControllerLegacy
                 $utentiesclusicruscotto=$this->getUtentiCorsoEsclusiCruscotto($utentiscadenza['rows'],$corso);
 
                 $utenteinscadenzaindex=0;
-                foreach ($utentiscadenza['rows'] as &$row) {
+                foreach ($utentiscadenza['rows'] as $row) {
                     foreach ($utentiesclusicruscotto as $utenteesclusocruscotto) {
-                        if ($utenteesclusocruscotto->id_utente == $row->id_user) {
-                            unset($utentiscadenza['rows'] [$utenteinscadenzaindex]);
+
+                        if ($utenteesclusocruscotto->id_user == $row->id_user) {
+                            //echo 'eliminato: '.$row->id_user.' - '.$utenteinscadenzaindex.' - '.$corso->titolo.'<br>';
+                            unset($utentiscadenza['rows'][$utenteinscadenzaindex]);
+
                             $numeroutentiesclusicruscotto++;
                         }
                     }
                     $utenteinscadenzaindex++;
                 }
                 $i=0;
-                foreach ($utentiscadenza['rows'] as &$row) {
+                foreach ($utentiscadenza['rows'] as $row) {
                     $to = json_decode($row->fields)->email;
-                    if ($i < 1) {
+                    $ore_esma=$this->new_ore_esma($row->id_user);
+                    $ore_ivass=$this->new_ore_ivass($row->id_user);
+                    $tot_ivass = $this->totale_ivass($row->id_user);
+
+                    $testomail=$testomail.'<br> situazione cruscotto: ESMA, realizzate '.$ore_esma.' ore su 30, IVASS realizzate '.$ore_ivass. ' su '.$tot_ivass;
+                    if ($i < 1) {//COMMENTARE
                         $this->sendMail($oggettomail . " " . $corso->titolo, $testomail, $to, $row->cognome);
-                    }
+                    }//COMMENTARE
                     $i++;
 
                 }
             }
             $this->updateLastmail($corso);
-            DEBUGG::log('corso:' . $corso->titolo , 'ALERT SCADENZE INVIO MAIL N° '.$numeroutentiscadenza.' tra questi esclusi N°:'.$numeroutentiesclusimail.' per esclusione mail e N:'.$numeroutentiesclusicruscotto.' per esclusione cruscotto', 0, 1, 0);
+            DEBUGG::log('corso:' . $corso->titolo , 'ALERT SCADENZE INVIO MAIL N° '.$i.' tra questi esclusi N°:'.$numeroutentiesclusimail.' per esclusione mail e N:'.$numeroutentiesclusicruscotto.' per esclusione cruscotto', 0, 1, 0);
         }catch (Exception $ex){
             DEBUGG::log($ex->getMessage(), 'ERRORE INVIO MAIL', 0, 1, 0);
         }
@@ -399,10 +410,11 @@ class gginterfaceControllerAlertcarige extends JControllerLegacy
         }
     }
 
-    private function getUtentiCorsoEsclusiCruscotto($users,$corso){
+    private function
+    getUtentiCorsoEsclusiCruscotto($users,$corso){
 
         try {
-            $utentiesclusicruscotto = null;
+            $utentiesclusicruscotto =array();
             switch ($corso->id_tema) {
 
                 case null:
@@ -411,26 +423,32 @@ class gginterfaceControllerAlertcarige extends JControllerLegacy
                 case '1':
                     foreach ($users as $user) {
 
-                        if ($this->new_ore_esma($user->id_user) > 29)
+                        if ($this->new_ore_esma($user->id_user) > 29) {
                             array_push($utentiesclusicruscotto, $user);
+                        }
                     }
                     break;
                 case '2':
                     foreach ($users as $user) {
 
-                        if ($this->new_ore_ivass($user->id_user) > 44)
-                            array_push($utentiesclusicruscotto, $users);
+                        if ($this->new_ore_ivass($user->id_user) > 44) {
+                            array_push($utentiesclusicruscotto, $user);
+                        }
                     }
                     break;
                 case '1,2':
                     foreach ($users as $user) {
-                        if ($this->new_ore_esma($user->id_user) > 29 && $this->new_ore_ivass($user->id_user) > 44)
-                            array_push($utentiesclusicruscotto, $users);
+
+                        if ($this->new_ore_esma($user->id_user) > 29 && $this->new_ore_ivass($user->id_user) > 44) {
+//if($user->id_user==652){var_dump($user);};
+                            array_push($utentiesclusicruscotto, $user);
+                        }
                     }
                     break;
 
 
             }
+
             return $utentiesclusicruscotto;
         }catch(Exception $ex){
             DEBUGG::log($ex->getMessage(), 'ERRORE IN GET_UTENTI_ESCLUSI_CRUSCOTTO', 0, 1, 0);
@@ -441,32 +459,42 @@ class gginterfaceControllerAlertcarige extends JControllerLegacy
 
     private function getTestiMail($tipo, $titolo){
 
-        switch ($tipo){
+        try {
+            switch ($tipo) {
 
-            case 1:
-                $testimail['oggetto']='Il corso '.$titolo.' ti aspetta su Carigelearing, cogli l\'attimo e aggiornati!';
-                $testimail['testo']='Ciao!<BR>Ricordati di fruire del corso : '.$titolo.' valido per il tuo aggiornamento IVASS/ESMA.<br>Vuoi sapere quante ore mancano per essere aggiornato sulla formazione annuale obbligatoria? Nessun problema, 
+                case 1:
+                    $testimail['oggetto'] = 'Il corso ' . $titolo . ' ti aspetta su Carigelearing, cogli l\'attimo e aggiornati!';
+                    $testimail['testo'] = 'Ciao!<BR>Ricordati di fruire del corso : ' . $titolo . ' valido per il tuo aggiornamento IVASS/ESMA.<br>Vuoi sapere quante ore mancano per essere aggiornato sulla formazione annuale obbligatoria? Nessun problema, 
                                     clicca su “home” e il cruscotto fruizioni è pronto a risponderti!<br>Buon corso!<br>Cal';
-                return $testimail;
-                break;
-            case 2:
-                $testimail['oggetto']=' Manca poco, il corso '.$titolo.' sta per scadere, non perdere l\'occasione di aggiornare le tue abilitazioni';
-                $testimail['testo']='Ciao,<br>sono tornato per avvertirti che manca poco alla scadenza del WBT '.$titolo.'!<br>Il tuo cruscotto fruizioni segnala che mancano delle ore per il tuo aggiornamento IVASS/ESMA e quindi da oggi te lo ricorderò ogni giorno ...
-                                     <br>Buon lavoro e buon corso!Cal';
-                return $testimail;
-                break;
-            case 3:
-                $testimail['oggetto']='Hai già visto il corso '.$titolo.'? Clicca su Carigelearning!';
-                $testimail['testo']='Ciao sono Cal,<br>voglio ricordarti il corso “XXXX”, c’è ancora tempo ma una volta al mese è meglio ricordartelo o no?<br>Perché il tempo passa in fretta, si sa!<br>Non perdere l’occasione, formati subito!<br>Cal';
-                return $testimail;
-                break;
-            case 4:
-                $testimail['oggetto']='Il tempo stringe, collegati su Carigelearning il corso '.$titolo.' sta per scadere';
-                $testimail['testo']='Ciao!!<br>Sono tornato per avvertirti che  il corso '.$titolo.' sta per scadere: collegati subito, perché la formazione obbligatoria è… “obbligatoria”!!<br>Buon lavoro e buon corso!<br>Cal';
-                return $testimail;
-                break;
+
+                    break;
+                case 2:
+                    $testimail['oggetto'] = ' Manca poco, il corso ' . $titolo . ' sta per scadere, non perdere l\'occasione di aggiornare le tue abilitazioni';
+                    $testimail['testo'] = 'Ciao,<br>sono tornato per avvertirti che manca poco alla scadenza del WBT ' . $titolo . '!<br>Il tuo cruscotto fruizioni segnala che mancano delle ore per il tuo aggiornamento IVASS/ESMA e quindi da oggi te lo ricorderò ogni giorno ...
+                                     <br>Buon lavoro e buon corso!<br>Cal';
+
+                    break;
+                case 3:
+                    $testimail['oggetto'] = 'Hai già visto il corso ' . $titolo . '? Clicca su Carigelearning!';
+                    $testimail['testo'] = 'Ciao sono Cal,<br>voglio ricordarti il corso “XXXX”, c’è ancora tempo ma una volta al mese è meglio ricordartelo o no?<br>Perché il tempo passa in fretta, si sa!<br>Non perdere l’occasione, formati subito!<br>Cal';
+
+                    break;
+                case 4:
+                    $testimail['oggetto'] = 'Il tempo stringe, collegati su Carigelearning il corso ' . $titolo . ' sta per scadere';
+                    $testimail['testo'] = 'Ciao!!<br>Sono tornato per avvertirti che  il corso ' . $titolo . ' sta per scadere: collegati subito, perché la formazione obbligatoria è… “obbligatoria”!!<br>Buon lavoro e buon corso!<br>Cal';
+
+                    break;
+            }
+
+            return $testimail;
+
+        }catch(Exception $ex){
+            DEBUGG::log($ex->getMessage(), 'ERRORE IN GET_TESTI_MAIL', 0, 1, 0);
+
         }
+
     }
+
 
     function scadenza_ivass($userid){
 
