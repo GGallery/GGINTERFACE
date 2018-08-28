@@ -40,8 +40,11 @@ class gginterfaceControllerAlertcarige extends JControllerLegacy
 
         try {
             //$to = $row->email; SCOMMENTARE
-            //$to = ['a.petruzzella71@gmail.com','gabriele.neri@carige.it']; //COMMENTARE
-            $to = ['a.petruzzella71@gmail.com'];
+            $to = ['a.petruzzella71@gmail.com','gabriele.neri@carige.it']; //COMMENTARE
+            //$to = ['a.petruzzella71@gmail.com','gabriele.neri3@gmail.com'];
+            //$to='gabriele.neri@carige.it';
+            //$to = ['sergio.zipoli@carige.it', 'elisa.alloro@carige.it'];
+            //$to = ['a.petruzzella71@gmail.com'];
             $mailer = JFactory::getMailer();
             $config = JFactory::getConfig();
             /*$sender = array(
