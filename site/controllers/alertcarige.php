@@ -39,12 +39,12 @@ class gginterfaceControllerAlertcarige extends JControllerLegacy
     private function sendMail($oggettomail,$testomail,$to,$cognome){
 
         try {
-            //$to = $row->email; SCOMMENTARE
-            $to = ['a.petruzzella71@gmail.com','gabriele.neri@carige.it']; //COMMENTARE
+            $mail_address=$to;
+            //$to = ['a.petruzzella71@gmail.com','gabriele.neri@carige.it']; //COMMENTARE
             //$to = ['a.petruzzella71@gmail.com','gabriele.neri3@gmail.com'];
             //$to='gabriele.neri@carige.it';
             //$to = ['sergio.zipoli@carige.it', 'elisa.alloro@carige.it'];
-            //$to = ['a.petruzzella71@gmail.com'];
+            $to = ['a.petruzzella71@gmail.com'];//COMMENTARE
             $mailer = JFactory::getMailer();
             $config = JFactory::getConfig();
             /*$sender = array(
@@ -61,9 +61,10 @@ class gginterfaceControllerAlertcarige extends JControllerLegacy
             $mailer->addRecipient($to);
 
             $mailer->setSubject($oggettomail);
-            $mailer->setBody('Gentile ' . $cognome . " " . $testomail);
+            $mailer->setBody('Gentile ' . $cognome . ' ' .$testomail);
             //$mailer->setBody('$testomail);
-            $send = $mailer->Send();
+            //$send = $mailer->Send();
+            DEBUGG::log($mail_address, 'DESTINATARIO MAIL: ', 0, 1, 0);
         }catch (Exception $ex){
             DEBUGG::log($ex->getMessage(), 'ERRORE INVIO MAIL GENERALE', 0, 1, 0);
         }
@@ -72,18 +73,20 @@ class gginterfaceControllerAlertcarige extends JControllerLegacy
     public function sendAlertScadenzaCorsi(){//DEVI MODIFICARE QUESTA PROCEDURA, DIVIDENDO I DUE IF IN 4 IN MODO DA POTER  MANDARE UN NUOVO PARAMENTRO ALLA sendMailAlertScadenzaCorsi
 
         try {
-
+            DEBUGG::log('INIZIO SESSIONE MAIL', 'INIZIO SESSIONE MAIL: ', 0, 1, 0);
             $corsi_primo_tipo = $this->elencoCorsiPerTipoScadenza(1);//prende soltanto i corsi del tipo 1, ovvero esma - ivass - etc
 
             foreach ($corsi_primo_tipo as $corso) {
-                if ($corso->daysfromdata_fine< 15) {
+                if ($corso->daysfromdata_fine< 15 && $corso->daysfromlastalert > 1) {
 
                     //echo 'PRIMO TIPO invio mail per :'.$corso->id.'<BR>';
                     $this->sendMailAlertScadenzaCorsi($corso,1);//VIENE MANDATA LA MAIL: IL CORSO SCADE TRA MENO DI 15 GIORNI
+                    return;
                 }
 
                 if($corso->daysfromdata_fine> 14 && $corso->daysfromlastalert > 14){
                     $this->sendMailAlertScadenzaCorsi($corso,2);//VIENE MANDATA LA MAIL: SONO PASSATI PIU' DI 15 DALL'INVIO
+                    return;
                 }
             }
 
@@ -93,11 +96,13 @@ class gginterfaceControllerAlertcarige extends JControllerLegacy
                 if ($corso_->daysfromdata_fine <= 30 && $corso_->daysfromlastalert > 6){
                     //echo 'SECONDO TIPO invio mail per :'.$corso_->id.'<BR>';
                     $this->sendMailAlertScadenzaCorsi($corso_,3);//VIENE MANDATA LA MAIL: IL CORSO SCADE TRA MENO DI 30 GIORNI E SONO PASSATI PIU' DI 6 DALL'INVIO;
+                    return;
                 }
 
                 if($corso_->daysfromdata_fine > 29 && $corso_->daysfromlastalert > 29){//SONO PASSATI PIU' 30, IL CORSO SACDE TRA PIU' DI 30 GG
 
                     $this->sendMailAlertScadenzaCorsi($corso_,4);
+                    return;
                 }
             }
         }catch (Exception $ex){
@@ -261,10 +266,12 @@ class gginterfaceControllerAlertcarige extends JControllerLegacy
                         $query->from('#__gg_report_users as anagrafica');
                         $query->join('inner', '#__user_usergroup_map as um on anagrafica.id_user=um.user_id');
                         $query->join('inner', '#__gg_usergroup_map as m on m.idgruppo=um.group_id');
-                        $query->where('m.idunita=' . $corso->id . ' and anagrafica.id not in ( select id_anagrafica from #__gg_view_stato_user_corso where id_corso=' . $corso->id . ' and stato=1)');
+                        $query->where('m.idunita=' . $corso->id . ' and anagrafica.id not in ( select id_anagrafica from #__gg_view_stato_user_corso where id_corso=' . $corso->id . ' and stato=1) 
+                        and anagrafica.id_user in (select user from cc_mail_gruppo_tester)
+                        ');
 
 
-                        //echo $query.'<br>';
+                        echo $query.'<br>';
                         //die;
                         $db->setQuery($query);
 
@@ -286,10 +293,10 @@ class gginterfaceControllerAlertcarige extends JControllerLegacy
     private function updateLastmail($corso){
 
         $db = JFactory::getDbo();
-        $query="UPDATE crg_ggif_edizione_unita_gruppo SET lastalert=now() where id_unita=".$corso->id;
+        $query="UPDATE crg_ggif_edizione_unita_gruppo_alert_copy SET lastalert=now() where id_unita=".$corso->id;
         $db->setQuery($query);
         $db->execute();
-
+        DEBUGG::log('FINE SESSIONE MAIL', 'FINE SESSIONE MAIL: ', 0, 1, 0);
 
     }
 
@@ -304,7 +311,7 @@ class gginterfaceControllerAlertcarige extends JControllerLegacy
 
 
             $numeroutentiesclusimail=0;
-            $numeroutentiesclusicruscotto=0;
+
             if ($utentiscadenza['rows'] != null) {
                 $utenteinscadenzaindex=0;
                 foreach ($utentiscadenza['rows'] as &$row) {
@@ -317,38 +324,39 @@ class gginterfaceControllerAlertcarige extends JControllerLegacy
 
                     $utenteinscadenzaindex++;
                 }
+                $numeroutentiinscadenzaprimaesclusionecruscotto=count($utentiscadenza['rows']);
                 $utentiesclusicruscotto=$this->getUtentiCorsoEsclusiCruscotto($utentiscadenza['rows'],$corso);
-
+                $numeroutentiesclusicruscotto=count($utentiesclusicruscotto);
                 $utenteinscadenzaindex=0;
                 foreach ($utentiscadenza['rows'] as $row) {
                     foreach ($utentiesclusicruscotto as $utenteesclusocruscotto) {
 
                         if ($utenteesclusocruscotto->id_user == $row->id_user) {
-                            //echo 'eliminato: '.$row->id_user.' - '.$utenteinscadenzaindex.' - '.$corso->titolo.'<br>';
+                            DEBUGG::log($row->id_user, 'UTENTE ESCLUSO PER CRUSCOTTO: ', 0, 1, 0);
                             unset($utentiscadenza['rows'][$utenteinscadenzaindex]);
 
-                            $numeroutentiesclusicruscotto++;
                         }
                     }
                     $utenteinscadenzaindex++;
                 }
                 $i=0;
                 foreach ($utentiscadenza['rows'] as $row) {
+                    $testo_cruscotto=null;
                     $to = json_decode($row->fields)->email;
-                    $ore_esma=$this->new_ore_esma($row->id_user);
-                    $ore_ivass=$this->new_ore_ivass($row->id_user);
-                    $tot_ivass = $this->totale_ivass($row->id_user);
-
-                    $testomail=$testomail.'<br> situazione cruscotto: ESMA, realizzate '.$ore_esma.' ore su 30, IVASS realizzate '.$ore_ivass. ' su '.$tot_ivass;
-                    if ($i < 1) {//COMMENTARE
-                        $this->sendMail($oggettomail . " " . $corso->titolo, $testomail, $to, $row->cognome);
-                    }//COMMENTARE
+                    //$ore_esma=$this->new_ore_esma($row->id_user);
+                    //$ore_ivass=$this->new_ore_ivass($row->id_user);
+                    //$tot_ivass = $this->totale_ivass($row->id_user);
+                    //$testo_cruscotto='<br> situazione cruscotto: ESMA, realizzate '.$ore_esma.' ore su 30, IVASS realizzate '.$ore_ivass. ' su '.$tot_ivass;
+                    $testomail=$testomail.$testo_cruscotto;
+                    //if ($i < 3) {//COMMENTARE
+                    $this->sendMail($oggettomail, $testomail, $to, $row->cognome);
+                    //}//COMMENTARE
                     $i++;
 
                 }
             }
             $this->updateLastmail($corso);
-            DEBUGG::log('corso:' . $corso->titolo , 'ALERT SCADENZE INVIO MAIL N° '.$i.' tra questi esclusi N°:'.$numeroutentiesclusimail.' per esclusione mail e N:'.$numeroutentiesclusicruscotto.' per esclusione cruscotto', 0, 1, 0);
+            DEBUGG::log('corso:' . $corso->titolo , 'ALERT SCADENZE INVIO MAIL N° '.$i.' partendo da '.$numeroutentiinscadenzaprimaesclusionecruscotto.' tra questi esclusi N°:'.$numeroutentiesclusimail.' per esclusione mail e N:'.$numeroutentiesclusicruscotto.' per esclusione cruscotto', 0, 1, 0);
         }catch (Exception $ex){
             DEBUGG::log($ex->getMessage(), 'ERRORE INVIO MAIL', 0, 1, 0);
         }
@@ -426,25 +434,28 @@ class gginterfaceControllerAlertcarige extends JControllerLegacy
                 case '1':
                     foreach ($users as $user) {
 
-                        if ($this->new_ore_esma($user->id_user) > 29) {
+                        if ($this->new_ore_esma($user->id_user) > 30) {
                             array_push($utentiesclusicruscotto, $user);
+                            DEBUGG::log('ESCLUSO ESMA CORSO: '.$corso->id.' UTENTE:'.$user->id_user, 'ANALISI MAIL', 0, 1, 0);
                         }
                     }
                     break;
                 case '2':
                     foreach ($users as $user) {
 
-                        if ($this->new_ore_ivass($user->id_user) > 44) {
+                        if ($this-> check_ore_ivass($user->id_user)) {
                             array_push($utentiesclusicruscotto, $user);
+                            DEBUGG::log('ESCLUSO IVASS CORSO: '.$corso->id.' UTENTE:'.$user->id_user, 'ANALISI MAIL', 0, 1, 0);
                         }
                     }
                     break;
                 case '1,2':
                     foreach ($users as $user) {
 
-                        if ($this->new_ore_esma($user->id_user) > 29 && $this->new_ore_ivass($user->id_user) > 44) {
-//if($user->id_user==652){var_dump($user);};
+                        if ($this->new_ore_esma($user->id_user) > 30 && $this->check_ore_ivass($user->id_user)) {
+
                             array_push($utentiesclusicruscotto, $user);
+                            DEBUGG::log('ESCLUSO ESMA/IVASS CORSO: '.$corso->id.' UTENTE:'.$user->id_user, 'ANALISI MAIL', 0, 1, 0);
                         }
                     }
                     break;
@@ -479,7 +490,7 @@ class gginterfaceControllerAlertcarige extends JControllerLegacy
                     break;
                 case 3:
                     $testimail['oggetto'] = 'Hai già visto il corso ' . $titolo . '? Clicca su Carigelearning!';
-                    $testimail['testo'] = 'Ciao sono Cal,<br>voglio ricordarti il corso “XXXX”, c’è ancora tempo ma una volta al mese è meglio ricordartelo o no?<br>Perché il tempo passa in fretta, si sa!<br>Non perdere l’occasione, formati subito!<br>Cal';
+                    $testimail['testo'] = 'Ciao sono Cal,<br>voglio ricordarti il corso '.$titolo.', c’è ancora tempo ma una volta al mese è meglio ricordartelo o no?<br>Perché il tempo passa in fretta, si sa!<br>Non perdere l’occasione, formati subito!<br>Cal';
 
                     break;
                 case 4:
@@ -519,65 +530,53 @@ class gginterfaceControllerAlertcarige extends JControllerLegacy
     }
 
     function new_ore_ivass($userid){
+        $db = JFactory::getDbo();
 
-        try {
-            $db = JFactory::getDbo();
-            //$contenuti_ivass=getContenutiTema(2);
-            //$corsi_ivass=getCorsiTema(2);
-            /*$query = "select e.anno as anno, sum(durata)/3600 as ore from crg_gg_report as r INNER JOIN crg_gg_contenuti as c on r.id_contenuto=c.id inner join crg_ggif_edizione_unita_gruppo as e on e.id_unita=r.id_corso
-                      where r.stato=1 and e.id_tema like '%2%' and r.id_utente=".$userid." group by e.anno";*/
-            $query = "select YEAR(u.data_fine) as anno, sum(durata)/3600 as ore from crg_gg_report as r INNER JOIN crg_gg_contenuti as c on r.id_contenuto=c.id inner join crg_ggif_edizione_unita_gruppo as e on e.id_unita=r.id_corso
-            inner join crg_gg_unit as u on u.id=r.id_corso inner join crg_gg_view_stato_user_corso as v on r.id_corso=v.id_corso and r.id_anagrafica=v.id_anagrafica
-            where v.stato=1 and r.stato=1 and e.id_tema like '%2%' and r.id_utente=" . $userid . " group by YEAR(u.data_fine)";
-            $db->setQuery($query);
-            $ore_fad = $db->loadAssocList('anno');
+        $query="select YEAR(u.data_fine) as anno, sum(durata)/3600 as ore from crg_gg_report as r 
+              INNER JOIN crg_gg_contenuti as c on r.id_contenuto=c.id 
+              inner join crg_ggif_edizione_unita_gruppo as e on e.id_unita=r.id_corso
+              inner join crg_gg_unit as u on u.id=r.id_corso 
+              inner join crg_gg_view_stato_user_corso as v on r.id_corso=v.id_corso and r.id_anagrafica=v.id_anagrafica
+              inner join cc_crg_ggif_corrispondenza_utente_ivass as corr on r.id_utente=corr.id_utente
+              where v.stato=1 and r.stato=1 and e.id_tema like '%2%' and r.id_utente=".$userid." 
+              and v.data_fine>=corr.data_inizio_biennio and v.data_fine<=corr.data_fine_biennio
+              group by YEAR(u.data_fine)";
+        $db->setQuery($query);
+        $ore_fad=$db->loadAssocList('anno');
 
-            $query = "select YEAR(data_corso) as anno, sum(res.ore) as ore from cc_crg_ggif_logres as res where id_utente=" . $userid . " and res.id_tema=2 group by YEAR(data_corso)";
-            $db->setQuery($query);
-            $ore_res = $db->loadAssocList('anno');
-            //echo 'ore_fad_ivass:'.$ore_fad.'ore_res_ivass:'.$ore_res;
-            return $this->aggiusta45($ore_fad, $ore_res);
-        }catch(Exception $ex){
-            DEBUGG::log($ex->getMessage(), 'ERRORE IN NEW_ORE_IVASS', 0, 1, 0);
+        $query="select YEAR(data_corso) as anno, sum(res.ore) as ore from cc_crg_ggif_logres as res where id_utente=".$userid." and res.id_tema=2 group by YEAR(data_corso)";
+        $db->setQuery($query);
+        $ore_res=$db->loadAssocList('anno');
 
-        }
+        return $this->aggiusta45($ore_fad,$ore_res);
     }
-
 
     function new_ore_esma($userid)
     {
-        try {
+        $db = JFactory::getDbo();
+        //$contenuti_esma=getContenutiTema(1);
 
-            $db = JFactory::getDbo();
-            //$contenuti_esma=getContenutiTema(1);
+        //$corsi_esma=getCorsiTema(1);
+        $query = "select sum(durata)/3600 as ore from crg_gg_report as r INNER JOIN crg_gg_contenuti as c on r.id_contenuto=c.id inner join crg_ggif_edizione_unita_gruppo as e on e.id_unita=r.id_corso 
+              inner join crg_gg_view_stato_user_corso as v on r.id_corso=v.id_corso and r.id_anagrafica=v.id_anagrafica where v.stato=1 and r.stato=1 and e.id_tema like '%1%' and r.id_utente=".$userid;
+        $query=$query." and r.data>STR_TO_DATE(CONCAT(YEAR(DATE_ADD(NOW(), INTERVAL -1 YEAR)),'-',MONTH('2000-09-01'),'-',DAY('2000-09-01')),'%Y-%m-%d' ) and r.data<STR_TO_DATE(CONCAT(YEAR(NOW()),'-',MONTH('2000-09-30'),'-',DAY('2000-09-30')),'%Y-%m-%d' )";
+        // echo $query;
+        $db->setQuery($query);
+        $ore_fad=$db->loadResult();
 
-            //$corsi_esma=getCorsiTema(1);
-            $query = "select sum(durata)/3600 as ore from crg_gg_report as r INNER JOIN crg_gg_contenuti as c on r.id_contenuto=c.id inner join crg_ggif_edizione_unita_gruppo as e on e.id_unita=r.id_corso 
-              inner join crg_gg_view_stato_user_corso as v on r.id_corso=v.id_corso and r.id_anagrafica=v.id_anagrafica where v.stato=1 and r.stato=1 and e.id_tema like '%1%' and r.id_utente=" . $userid;
-            // echo $query;
-            $db->setQuery($query);
-            $ore_fad = $db->loadResult();
-
-            $query = "select sum(res.ore) as ore from cc_crg_ggif_logres as res where id_utente=" . $userid . " and res.id_tema=1 and data_corso>STR_TO_DATE(CONCAT(YEAR(DATE_ADD(NOW(), INTERVAL -1 YEAR)),'-',MONTH('2000-09-01'),'-',DAY('2000-09-01')),'%Y-%m-%d' )";
-            // echo $query;
-            $db->setQuery($query);
-            $ore_res = $db->loadResult();
-            //echo 'ore_fad_esma:'.$ore_fad.'ore_esma_res:'.$ore_res;
-            return $ore_fad + $ore_res;
-        }catch(Exception $ex){
-            DEBUGG::log($query, 'ERRORE IN NEW_ORE_ESMA', 0, 1, 0);
-
-        }
+        $query = "select sum(res.ore) as ore from cc_crg_ggif_logres as res where id_utente=" . $userid . " and res.id_tema=1 and data_corso>STR_TO_DATE(CONCAT(YEAR(DATE_ADD(NOW(), INTERVAL -1 YEAR)),'-',MONTH('2000-09-01'),'-',DAY('2000-09-01')),'%Y-%m-%d' )";
+        // echo $query;
+        $db->setQuery($query);
+        $ore_res=$db->loadResult();
+        //echo 'ore_fad_esma:'.$ore_fad.'ore_esma_res:'.$ore_res;
+        return $ore_fad+$ore_res;
     }
 
     function aggiusta45($ore_fad,$ore_res){
 
-        //var_dump($ore_fad);var_dump($ore_res);die;
-        //$anni=array(2017,2018,2019,2020,2021,2022);
-        //var_dump(array_column($ore_fad,'anno'));var_dump(array_column($ore_res,'anno'));die;
         $anni=array_merge(array_column($ore_fad,'anno'),array_column($ore_res,'anno'));
         $totale_array=array();
-        //var_dump($anni);die;
+
         foreach ($anni as $anno){
 
             //echo $anno . ' : fad:' . $ore_fad[$anno] . ' res:' . $ore_res[$anno];
@@ -590,6 +589,51 @@ class gginterfaceControllerAlertcarige extends JControllerLegacy
         }
         return $totale;
     }
+
+    function check_ore_ivass($userid){
+
+        $db = JFactory::getDbo();
+
+        $query="select YEAR(v.data_fine) as 'anno', sum(durata)/3600 as ore from crg_gg_report as r 
+              INNER JOIN crg_gg_contenuti as c on r.id_contenuto=c.id 
+              inner join crg_ggif_edizione_unita_gruppo as e on e.id_unita=r.id_corso
+              inner join crg_gg_unit as u on u.id=r.id_corso 
+              inner join crg_gg_view_stato_user_corso as v on r.id_corso=v.id_corso and r.id_anagrafica=v.id_anagrafica
+              inner join cc_crg_ggif_corrispondenza_utente_ivass as corr on r.id_utente=corr.id_utente
+              where v.stato=1 and r.stato=1 and e.id_tema like '%2%' and r.id_utente=".$userid." 
+              and v.data_fine>=corr.data_inizio_biennio and v.data_fine<=corr.data_fine_biennio
+              group by YEAR(v.data_fine)";
+        $db->setQuery($query);
+        $ore_fad=$db->loadAssocList('anno');
+
+        $query_="select YEAR(res.data_corso) as 'anno', sum(res.ore) as ore from cc_crg_ggif_logres as res
+                inner join cc_crg_ggif_corrispondenza_utente_ivass as corr on corr.id_utente=res.id_utente
+                where res.id_utente=".$userid." and res.id_tema=2 
+                and res.data_corso>corr.data_inizio_biennio and res.data_corso<corr.data_fine_biennio
+                group by YEAR(data_corso)";
+        $db->setQuery($query_);
+        $ore_res=$db->loadAssocList('anno');
+        $anni=array_merge(array_column($ore_fad,'anno'),array_column($ore_res,'anno'));
+        $totale_array=array();
+
+        foreach ($anni as $anno){
+
+            //echo $anno . ' : fad:' . $ore_fad[$anno] . ' res:' . $ore_res[$anno];
+            $totale_array[$anno] = ($ore_fad[$anno]['ore'] + $ore_res[$anno]['ore'] < 46 ? $ore_fad[$anno]['ore'] + $ore_res[$anno]['ore'] : 45);
+
+        }
+
+        if($totale_array[$anni[0]]>44 || $totale_array[$anni[0]]+$totale_array[$anni[1]]>60){
+            DEBUGG::log('ESCLUSO IVASS UTENTE:'.$userid.' IVASS '.$anni[0].': '.(string)$totale_array[$anni[0]].' IVASS '.$anni[1].':'.(string)($totale_array[$anni[0]]+$totale_array[$anni[1]]), 'ANALISI CRUSCOTTO', 0, 1, 0);
+            return true;
+        }else{
+            DEBUGG::log('INCLUSO IVASS UTENTE:'.$userid.' IVASS '.$anni[0].': '.(string)$totale_array[$anni[0]].' IVASS '.$anni[1].':'.(string)($totale_array[$anni[0]]+$totale_array[$anni[1]]), 'ANALISI CRUSCOTTO', 0, 1, 0);
+            return false;
+        }
+    }
+
+
+
 
 }
 
