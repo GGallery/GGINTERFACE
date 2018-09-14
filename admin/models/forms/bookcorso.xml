@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<form addrulepath="/administrator/components/com_gglms/models/rules">
+
+	<fieldset addfieldpath="/administrator/components/com_gginterface/models/fields" >
+		<field
+				name="id"
+				type="text"
+				label="Id"
+				description="id"
+				size="100"
+				required="true"
+				default=""
+				readonly="true"
+		/>
+
+
+		<field
+				name="titolo"
+				type="text"
+				label="Corso"
+				description="Corso"
+				size="70"
+				class="inputbox"
+
+				required="true"
+				default=""
+		/>
+
+
+		<field
+				name="descrizione"
+				type="textarea"
+				label="Descrizione"
+				description="Descrizione Corso"
+				size="70"
+				class="inputbox"
+				filter="safehtml"
+
+				required="false"
+				default=""
+
+				cols="50" rows="5"
+
+		/>
+		<field name="data_inizio"
+			   type="calendar"
+			   default="NOW"
+			   label="Seleziona data inizio corso"
+			   description=""
+			   class="input-small"
+
+			   filter="user_utc"
+			   showtime="false"
+			   todaybutton="true"
+			   filltable="false"
+			   translateformat="true" />
+
+		<field name="data_fine"
+			   type="calendar"
+			   default="NOW"
+			   label="Seleziona data fine corso"
+			   description=""
+			   class="input-small"
+
+			   filter="user_utc"
+			   showtime="false"
+			   todaybutton="true"
+			   filltable="false"
+			   translateformat="true" />
+
+	</fieldset>
+</form>
